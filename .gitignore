@@ -24,3 +24,8 @@ Thumbs.db
 
 # uploads
 server/uploads/
+
+# shared build output
+shared/dist/
+shared/src/*.js
+shared/src/*.js.map
