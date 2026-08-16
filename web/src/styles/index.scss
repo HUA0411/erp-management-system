@@ -1,0 +1,128 @@
+/* ============ 企业主题：深蓝主色 + 琥珀强调 ============ */
+:root {
+  /* 主色 #2456a6 的亮暗变体 */
+  --el-color-primary: #2456a6;
+  --el-color-primary-light-3: #5d81bd;
+  --el-color-primary-light-5: #8aa9d2;
+  --el-color-primary-light-7: #b8cbe5;
+  --el-color-primary-light-8: #cfdced;
+  --el-color-primary-light-9: #e9eff8;
+  --el-color-primary-dark-2: #1d4485;
+
+  --el-color-success: #2f9e6e;
+  --el-color-warning: #f2a33c;
+  --el-color-danger: #d9534f;
+  --el-color-info: #7a8699;
+
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+
+  /* 布局变量 */
+  --sidebar-width: 228px;
+  --sidebar-collapsed-width: 64px;
+  --sidebar-bg: #14263f;
+  --sidebar-bg-hover: #1d3557;
+  --sidebar-text: #a8b8cf;
+  --sidebar-text-active: #ffffff;
+  --header-height: 56px;
+  --page-bg: #f2f5f9;
+  --card-radius: 10px;
+
+  --app-font: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--app-font);
+  font-size: 14px;
+  color: #2b3445;
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 数字对齐：金额/数量使用等宽数字 */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 页面通用卡片 */
+.page {
+  padding: 16px;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: var(--card-radius);
+  box-shadow: 0 1px 2px rgba(20, 38, 63, 0.06);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+/* 表格密度与表头 */
+.el-table {
+  --el-table-header-bg-color: #f5f8fc;
+  --el-table-header-text-color: #51607a;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c6d0de;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a9b6c9;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 路由切换过渡 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}

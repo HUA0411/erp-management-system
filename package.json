@@ -1,0 +1,25 @@
+{
+  "name": "erp-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "企业 ERP 进销存一体化管理系统（NestJS + Vue3 + MySQL，多租户）",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w server && npm run build -w web",
+    "db:create": "npm run db:create -w server",
+    "db:migrate": "npm run migration:run -w server",
+    "db:seed": "npm run seed -w server",
+    "db:init": "npm run db:create && npm run db:migrate && npm run db:seed",
+    "db:reset": "npm run db:reset -w server",
+    "db:demo": "npm run db:demo -w server",
+    "test": "npm run test -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
