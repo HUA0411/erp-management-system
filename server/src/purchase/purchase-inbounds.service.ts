@@ -5,6 +5,7 @@ import { PurchaseInboundEntity, PurchaseInboundItemEntity } from '../entities/in
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import type { PageResult } from '@erp/shared';
+import { formatDate, formatDateTime } from '../common/utils/no-generator';
 
 export interface InboundQuery {
   page: number;
@@ -89,7 +90,7 @@ export class PurchaseInboundsService {
 
   private toDetail(r: PurchaseInboundEntity): InboundDetail {
     const dateStr =
-      typeof r.inboundDate === 'string' ? r.inboundDate : (r.inboundDate as unknown as Date).toISOString().slice(0, 10);
+      typeof r.inboundDate === 'string' ? r.inboundDate : formatDate(r.inboundDate);
     return {
       id: r.id,
       inboundNo: r.inboundNo,
@@ -99,7 +100,7 @@ export class PurchaseInboundsService {
       inboundDate: dateStr,
       totalAmount: r.totalAmount,
       remark: r.remark ?? undefined,
-      createdAt: r.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatDateTime(r.createdAt),
       items: [],
     };
   }

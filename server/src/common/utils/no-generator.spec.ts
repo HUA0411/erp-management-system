@@ -1,4 +1,4 @@
-import { nextNo, round2, todayLocal, todayYmd } from './no-generator';
+import { formatDate, formatDateTime, nextNo, round2, todayLocal, todayYmd } from './no-generator';
 
 describe('no-generator', () => {
   it('round2 保留两位小数', () => {
@@ -11,6 +11,16 @@ describe('no-generator', () => {
     const d = new Date(2026, 7, 16); // 2026-08-16
     expect(todayYmd(d)).toBe('20260816');
     expect(todayLocal(d)).toBe('2026-08-16');
+  });
+
+  it('formatDateTime / formatDate 使用本地时间（修复 UTC 偏移）', () => {
+    // 本地 2026-08-16 22:09:38；toISOString 会输出 UTC（14:09:38），formatDateTime 必须保持本地值
+    const d = new Date(2026, 7, 16, 22, 9, 38);
+    expect(formatDateTime(d)).toBe('2026-08-16 22:09:38');
+    expect(formatDate(d)).toBe('2026-08-16');
+    // 字符串输入
+    expect(formatDateTime('2026-08-16 22:09:38')).toBe('2026-08-16 22:09:38');
+    expect(formatDate(new Date(2026, 7, 16, 0, 0, 0))).toBe('2026-08-16');
   });
 
   it('nextNo 按前缀+日期+序号生成', async () => {

@@ -6,6 +6,7 @@ import { PermissionService } from '../permission/permission.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import type { PageResult, RoleItem } from '@erp/shared';
+import { formatDateTime } from '../common/utils/no-generator';
 
 export interface RoleQuery {
   page: number;
@@ -50,7 +51,7 @@ export class RolesService {
         remark: r.remark ?? undefined,
         status: r.status,
         permissionIds,
-        createdAt: r.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: formatDateTime(r.createdAt),
       });
     }
     return { list, total, page, pageSize };
@@ -134,7 +135,7 @@ export class RolesService {
       remark: role.remark ?? undefined,
       status: role.status,
       permissionIds: await this.permissionService.rolePermissionIds(id),
-      createdAt: role.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatDateTime(role.createdAt),
     };
   }
 

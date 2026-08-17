@@ -91,6 +91,9 @@
         <el-button type="primary" :loading="pwdLoading" @click="submitPwd">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- AI 智能助手（右下角悬浮） -->
+    <AiAssistant />
   </el-container>
 </template>
 
@@ -103,6 +106,7 @@ import * as Icons from '@element-plus/icons-vue';
 import { useUserStore } from '@/stores/user';
 import { authApi } from '@/api';
 import { brand } from '@/config/brand';
+import AiAssistant from '@/components/ai/AiAssistant.vue';
 import type { MenuNode } from '@erp/shared';
 
 const userStore = useUserStore();

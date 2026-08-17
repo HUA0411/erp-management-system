@@ -8,6 +8,7 @@ import { PermissionService } from '../permission/permission.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import type { PageResult, RoleBrief, UserItem } from '@erp/shared';
+import { formatDateTime } from '../common/utils/no-generator';
 
 export interface UserQuery {
   page: number;
@@ -55,7 +56,7 @@ export class UsersService {
         status: u.status,
         isSuperAdmin: !!u.isSuperAdmin,
         roles: roleMap.get(u.id) ?? [],
-        createdAt: u.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: formatDateTime(u.createdAt),
       })),
       total,
       page,

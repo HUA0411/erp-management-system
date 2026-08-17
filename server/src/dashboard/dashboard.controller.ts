@@ -9,7 +9,7 @@ class TrendQuery {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(90)
+  @Max(730)
   days?: number;
 }
 

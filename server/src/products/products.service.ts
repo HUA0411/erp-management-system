@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
 import { CategoryEntity } from '../entities/category.entity';
+import { SupplierEntity } from '../entities/partner.entity';
 import { InventoryEntity } from '../entities/inventory.entity';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
@@ -45,7 +46,9 @@ export class ProductsService {
     const qb = this.productRepo
       .createQueryBuilder('p')
       .leftJoin(CategoryEntity, 'c', 'c.id = p.category_id')
+      .leftJoin(SupplierEntity, 's', 's.id = p.supplier_id')
       .addSelect('c.name', 'category_name')
+      .addSelect('s.name', 'supplier_name')
       .where('p.company_id = :cid', { cid: companyId });
     if (keyword) {
       qb.andWhere('(p.name LIKE :kw OR p.code LIKE :kw OR p.spec LIKE :kw)', { kw: `%${keyword}%` });
@@ -71,6 +74,8 @@ export class ProductsService {
       purchasePrice: Number(r.p_purchase_price ?? 0),
       salePrice: Number(r.p_sale_price ?? 0),
       safetyStock: Number(r.p_safety_stock ?? 0),
+      supplierId: r.p_supplier_id == null ? undefined : Number(r.p_supplier_id),
+      supplierName: (r.supplier_name as string) ?? undefined,
       status: Number(r.p_status ?? 1),
       remark: (r.p_remark as string) ?? undefined,
     }));
@@ -83,7 +88,9 @@ export class ProductsService {
     const qb = this.productRepo
       .createQueryBuilder('p')
       .leftJoin(InventoryEntity, 'i', 'i.product_id = p.id AND i.company_id = :cid', { cid: companyId })
+      .leftJoin(SupplierEntity, 's', 's.id = p.supplier_id')
       .addSelect('COALESCE(i.quantity, 0)', 'quantity')
+      .addSelect('s.name', 'supplier_name')
       .where('p.company_id = :cid', { cid: companyId })
       .andWhere('p.status = 1');
     if (keyword) qb.andWhere('(p.name LIKE :kw OR p.code LIKE :kw)', { kw: `%${keyword}%` });
@@ -102,6 +109,8 @@ export class ProductsService {
       purchasePrice: Number(r.p_purchase_price ?? 0),
       salePrice: Number(r.p_sale_price ?? 0),
       safetyStock: Number(r.p_safety_stock ?? 0),
+      supplierId: r.p_supplier_id == null ? undefined : Number(r.p_supplier_id),
+      supplierName: (r.supplier_name as string) ?? undefined,
       quantity: Number(r.quantity ?? 0),
     }));
   }

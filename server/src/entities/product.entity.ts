@@ -39,6 +39,9 @@ export class ProductEntity extends TenantBaseEntity {
   @Column(decimalColumn(12, 2, { comment: '安全库存，低于则预警' }))
   safetyStock: number;
 
+  @Column({ type: 'int', nullable: true, comment: '默认供应商（可更换或解除绑定）' })
+  supplierId: number;
+
   @Column({ length: 255, nullable: true, comment: '图片 URL' })
   image: string;
 

@@ -22,6 +22,6 @@ import { StocktakesController } from './stocktakes.controller';
   ],
   providers: [InventoryService, StocktakesService],
   controllers: [InventoryController, StocktakesController],
-  exports: [InventoryService],
+  exports: [InventoryService, StocktakesService],
 })
 export class InventoryModule {}

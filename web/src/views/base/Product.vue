@@ -35,6 +35,9 @@
           <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.salePrice) }}</span></template>
         </el-table-column>
         <el-table-column prop="safetyStock" label="安全库存" width="90" align="right" />
+        <el-table-column label="默认供应商" width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.supplierName || '—' }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
@@ -105,6 +108,11 @@
           </el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" maxlength="255" /></el-form-item>
+        <el-form-item label="默认供应商">
+          <el-select v-model="form.supplierId" clearable placeholder="选择默认供应商（可更换或解除）" style="width: 100%">
+            <el-option v-for="s in suppliers" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -118,14 +126,15 @@
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
-import { categoryApi, productApi } from '@/api';
+import { categoryApi, productApi, supplierApi } from '@/api';
 import { fmtMoney } from '@/utils';
-import type { ProductItem } from '@erp/shared';
+import type { ProductItem, SupplierItem } from '@erp/shared';
 
 const loading = ref(false);
 const list = ref<ProductItem[]>([]);
 const total = ref(0);
 const categories = ref<any[]>([]);
+const suppliers = ref<SupplierItem[]>([]);
 const query = reactive({ page: 1, pageSize: 10, keyword: '', categoryId: undefined as number | undefined, status: undefined as number | undefined });
 
 const dialogVisible = ref(false);
@@ -154,13 +163,17 @@ async function loadCategories() {
   categories.value = (await categoryApi.tree()) as any[];
 }
 
+async function loadSuppliers() {
+  suppliers.value = await supplierApi.options();
+}
+
 function openCreate() {
-  Object.assign(form, { id: undefined, code: '', name: '', categoryId: undefined, spec: '', unit: '', purchasePrice: 0, salePrice: 0, safetyStock: 0, remark: '' });
+  Object.assign(form, { id: undefined, code: '', name: '', categoryId: undefined, spec: '', unit: '', purchasePrice: 0, salePrice: 0, safetyStock: 0, supplierId: undefined, remark: '' });
   dialogVisible.value = true;
 }
 
 function openEdit(row: ProductItem) {
-  Object.assign(form, { ...row, categoryId: row.categoryId || undefined });
+  Object.assign(form, { ...row, categoryId: row.categoryId || undefined, supplierId: row.supplierId || undefined });
   dialogVisible.value = true;
 }
 
@@ -168,7 +181,7 @@ async function save() {
   await formRef.value?.validate();
   saving.value = true;
   try {
-    const payload = { name: form.name, categoryId: form.categoryId || 0, spec: form.spec, unit: form.unit, purchasePrice: form.purchasePrice, salePrice: form.salePrice, safetyStock: form.safetyStock, remark: form.remark };
+    const payload = { name: form.name, categoryId: form.categoryId || 0, spec: form.spec, unit: form.unit, purchasePrice: form.purchasePrice, salePrice: form.salePrice, safetyStock: form.safetyStock, supplierId: form.supplierId ?? 0, remark: form.remark };
     if (form.id) await productApi.update(form.id, payload);
     else await productApi.create({ ...payload, code: form.code });
     ElMessage.success('保存成功');
@@ -187,6 +200,7 @@ async function remove(row: ProductItem) {
 
 onMounted(() => {
   loadCategories();
+  loadSuppliers();
   load();
 });
 </script>

@@ -18,6 +18,11 @@ import { SaleOutboundEntity, SaleOutboundItemEntity } from '../entities/outbound
 import { InventoryEntity, InventoryRecordEntity } from '../entities/inventory.entity';
 import { StocktakeEntity, StocktakeItemEntity } from '../entities/stocktake.entity';
 import { PaymentEntity } from '../entities/payment.entity';
+import { AiConfigEntity } from '../entities/ai-config.entity';
+import { AiConversationEntity } from '../entities/ai-conversation.entity';
+import { AiMessageEntity } from '../entities/ai-message.entity';
+import { AiPendingActionEntity } from '../entities/ai-pending-action.entity';
+import { AiReportEntity } from '../entities/ai-report.entity';
 
 export const dataSourceOptions: MysqlConnectionOptions = {
   type: 'mysql',
@@ -52,6 +57,11 @@ export const dataSourceOptions: MysqlConnectionOptions = {
     StocktakeEntity,
     StocktakeItemEntity,
     PaymentEntity,
+    AiConfigEntity,
+    AiConversationEntity,
+    AiMessageEntity,
+    AiPendingActionEntity,
+    AiReportEntity,
   ],
   migrations: [__dirname + '/migrations/*.{ts,js}'],
   subscribers: [TenantSubscriber],

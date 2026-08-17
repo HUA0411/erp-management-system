@@ -73,13 +73,14 @@ export class DashboardService {
   /** 近 N 天销售趋势（按出库日） */
   async saleTrend(days = 30): Promise<TrendPoint[]> {
     const companyId = TenantContext.companyId;
-    const rows = await this.dataSource.query<Array<{ d: string; amount: string; cnt: string }>>(
+    const rows = await this.dataSource.query<Array<{ d: string | Date; amount: string; cnt: string }>>(
       `SELECT DATE(outbound_date) AS d, SUM(total_amount) AS amount, COUNT(*) AS cnt
        FROM sale_outbound WHERE company_id=? AND outbound_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
        GROUP BY DATE(outbound_date) ORDER BY d ASC`,
       [companyId, days - 1],
     );
-    const map = new Map(rows.map((r) => [String(r.d).slice(0, 10), r]));
+    // 注意：mysql2 的 DATE 列返回 Date 对象，String(Date) 不是 YYYY-MM-DD，必须用 todayLocal 格式化
+    const map = new Map(rows.map((r) => [todayLocal(new Date(r.d)), r]));
     const result: TrendPoint[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date();

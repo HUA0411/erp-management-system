@@ -45,9 +45,15 @@ export class CreateProductDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsInt()
   @Min(0)
   safetyStock?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  supplierId?: number;
 
   @IsOptional()
   @IsString()
@@ -94,6 +100,12 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   safetyStock?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  supplierId?: number;
 
   @IsOptional()
   @IsString()

@@ -24,6 +24,11 @@ const BUSINESS_TABLES = [
   'stocktake_item',
   'payment',
   'sys_operation_log',
+  'ai_config',
+  'ai_conversation',
+  'ai_message',
+  'ai_pending_action',
+  'ai_report',
 ];
 
 /**

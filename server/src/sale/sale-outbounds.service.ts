@@ -5,6 +5,7 @@ import { SaleOutboundEntity, SaleOutboundItemEntity } from '../entities/outbound
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import type { PageResult } from '@erp/shared';
+import { formatDate, formatDateTime } from '../common/utils/no-generator';
 
 export interface OutboundQuery {
   page: number;
@@ -85,7 +86,7 @@ export class SaleOutboundsService {
     const dateStr =
       typeof r.outboundDate === 'string'
         ? r.outboundDate
-        : (r.outboundDate as unknown as Date).toISOString().slice(0, 10);
+        : formatDate(r.outboundDate);
     return {
       id: r.id,
       outboundNo: r.outboundNo,
@@ -95,7 +96,7 @@ export class SaleOutboundsService {
       outboundDate: dateStr,
       totalAmount: r.totalAmount,
       remark: r.remark ?? undefined,
-      createdAt: r.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatDateTime(r.createdAt),
       items: [],
     };
   }

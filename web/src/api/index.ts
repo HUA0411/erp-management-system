@@ -1,6 +1,14 @@
 import http from './http';
 import type {
   AccountSummary,
+  AiCard,
+  AiChatResult,
+  AiConfigPayload,
+  AiConfigView,
+  AiConversationBrief,
+  AiPendingAction,
+  AiPreviewRow,
+  AiReport,
   CustomerItem,
   DashboardSummary,
   InventoryItem,
@@ -178,5 +186,41 @@ export const uploadApi = {
     });
   },
 };
+
+// ============ AI 助手 ============
+export interface AiConfirmResult {
+  ok: boolean;
+  message: string;
+  toolName: string;
+  preview: { title: string; rows: AiPreviewRow[] };
+  result: unknown;
+}
+
+export const agentApi = {
+  status: () => http.get<never, AiConfigView>('/ai-agent/status'),
+  testConfig: (data: AiConfigPayload) =>
+    http.post<never, { ok: boolean; message: string }>('/ai-agent/config/test', data, {
+      timeout: 30000,
+    }),
+  saveConfig: (data: AiConfigPayload) =>
+    http.put<never, AiConfigView>('/ai-agent/config', data),
+  chat: (data: { message: string; conversationId?: number }) =>
+    http.post<never, AiChatResult>('/ai-agent/chat', data, { timeout: 60000 }),
+  pending: () => http.get<never, AiPendingAction[]>('/ai-agent/pending'),
+  confirm: (id: number) =>
+    http.post<never, AiConfirmResult>(`/ai-agent/pending/${id}/confirm`),
+  cancel: (id: number) =>
+    http.post<never, { ok: boolean }>(`/ai-agent/pending/${id}/cancel`),
+  conversations: () => http.get<never, AiConversationBrief[]>('/ai-agent/conversations'),
+  conversationMessages: (id: number) =>
+    http.get<never, Array<{ role: 'user' | 'assistant'; content: string; cards: AiCard[] }>>(
+      `/ai-agent/conversations/${id}/messages`,
+    ),
+  latestReport: () => http.get<never, AiReport | null>('/ai-agent/report/low-stock/latest'),
+  refreshReport: () =>
+    http.post<never, AiReport | null>('/ai-agent/report/low-stock/refresh'),
+};
+
+export type { AiCard };
 
 export type { MenuNode };

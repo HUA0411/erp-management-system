@@ -15,6 +15,23 @@ export function todayLocal(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * 本地时间格式化为 YYYY-MM-DD HH:mm:ss。
+ * 不要用 toISOString()（那是 UTC，在 +08:00 会偏移 8 小时，纯日期列甚至会差一天）。
+ */
+export function formatDateTime(d: Date | string | number): string {
+  const date = typeof d === 'string' || typeof d === 'number' ? new Date(d) : d;
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+
+/** 本地日期格式化为 YYYY-MM-DD（避免 toISOString 的 UTC 偏移） */
+export function formatDate(d: Date | string | number): string {
+  const date = typeof d === 'string' || typeof d === 'number' ? new Date(d) : d;
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
 /**
  * 单号生成：前缀 + 日期 + 当日序号（如 PO202606010001）。
  * 依赖唯一索引兜底；并发冲突时由调用方捕获唯一键错误重试。

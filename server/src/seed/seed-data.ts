@@ -241,6 +241,7 @@ export const permissionTree: SeedPermissionNode[] = [
         path: '/system/log',
         children: [{ name: '查看日志', code: 'system:log:view', type: 'button' }],
       },
+      { name: 'AI 助手配置', code: 'ai:config', type: 'button' },
     ],
   },
 ];

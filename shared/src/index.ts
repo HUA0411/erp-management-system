@@ -88,6 +88,9 @@ export interface ProductItem {
   purchasePrice: number;
   salePrice: number;
   safetyStock: number;
+  /** 默认供应商（可更换或解除） */
+  supplierId?: number;
+  supplierName?: string;
   status: number;
   remark?: string;
 }
@@ -282,4 +285,74 @@ export interface OperationLogItem {
   path: string;
   ip?: string;
   createdAt: string;
+}
+
+// ============ AI 智能助手 ============
+export interface AiPreviewRow {
+  label: string;
+  value: string;
+}
+
+/** 交互卡片：追问 / 确认 / 结果 */
+export type AiCard =
+  | { type: 'clarification'; question: string; options: string[] }
+  | {
+      type: 'confirmation';
+      pendingId: number;
+      title: string;
+      rows: AiPreviewRow[];
+    }
+  | {
+      type: 'result';
+      ok: boolean;
+      title: string;
+      rows: AiPreviewRow[];
+      link?: { path: string; label: string };
+    };
+
+export interface AiChatResult {
+  conversationId: number;
+  reply: string;
+  cards: AiCard[];
+}
+
+/** AI 服务配置视图（永不包含完整 Key） */
+export interface AiConfigView {
+  configured: boolean;
+  canConfigure: boolean;
+  /** 提供商标识：deepseek/zhipu/qwen/kimi/doubao/openai/claude/gemini/openrouter/custom */
+  provider: string;
+  baseUrl: string;
+  model: string;
+  keyMasked?: string;
+}
+
+export interface AiConfigPayload {
+  apiKey?: string;
+  provider?: string;
+  baseUrl?: string;
+  model?: string;
+}
+
+export interface AiPendingAction {
+  id: number;
+  toolName: string;
+  preview: { title: string; rows: AiPreviewRow[] };
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface AiReport {
+  id: number;
+  type: string;
+  title: string;
+  content: AiPreviewRow[];
+  createdAt: string;
+}
+
+export interface AiConversationBrief {
+  id: number;
+  title: string;
+  updatedAt: string;
 }

@@ -5,7 +5,7 @@ import { InventoryEntity, InventoryRecordEntity } from '../entities/inventory.en
 import { ProductEntity } from '../entities/product.entity';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { todayYmd } from '../common/utils/no-generator';
+import { formatDateTime,  todayYmd  } from '../common/utils/no-generator';
 import type {
   InventoryItem,
   InventoryRecordItem,
@@ -195,7 +195,7 @@ export class InventoryService {
         refNo: r.refNo,
         remark: r.remark ?? undefined,
         operator: r.operator ?? undefined,
-        createdAt: r.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: formatDateTime(r.createdAt),
       })),
       total,
       page,

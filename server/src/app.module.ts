@@ -24,6 +24,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { FinanceModule } from './finance/finance.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SystemModule } from './system/system.module';
+import { AiAgentModule } from './ai-agent/ai-agent.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SystemModule } from './system/system.module';
     FinanceModule,
     DashboardModule,
     SystemModule,
+    AiAgentModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },

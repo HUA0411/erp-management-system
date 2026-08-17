@@ -7,7 +7,7 @@ import { PurchaseOrderEntity } from '../entities/purchase.entity';
 import { SaleOrderEntity } from '../entities/sale.entity';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { nextNo } from '../common/utils/no-generator';
+import { formatDateTime, formatDate,  nextNo  } from '../common/utils/no-generator';
 import type { AccountSummary, PageResult, PartnerType, PaymentItem, PaymentType } from '@erp/shared';
 
 export interface PaymentQuery {
@@ -66,10 +66,10 @@ export class FinanceService {
         amount: p.amount,
         orderNo: p.orderNo ?? undefined,
         payDate:
-          typeof p.payDate === 'string' ? p.payDate : (p.payDate as unknown as Date).toISOString().slice(0, 10),
+          typeof p.payDate === 'string' ? p.payDate : formatDate(p.payDate),
         method: p.method ?? undefined,
         remark: p.remark ?? undefined,
-        createdAt: p.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: formatDateTime(p.createdAt),
       })),
       total,
       page,

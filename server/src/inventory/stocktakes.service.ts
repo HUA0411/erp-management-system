@@ -7,7 +7,7 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from './inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { nextNo, round2 } from '../common/utils/no-generator';
+import { formatDateTime,  nextNo, round2  } from '../common/utils/no-generator';
 import type { PageResult, StocktakeStatus } from '@erp/shared';
 
 export interface StocktakeQuery {
@@ -160,7 +160,7 @@ export class StocktakesService {
       stocktakeNo: r.stocktakeNo,
       status: r.status,
       remark: r.remark ?? undefined,
-      createdAt: r.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatDateTime(r.createdAt),
       items: [],
     };
   }

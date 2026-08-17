@@ -8,7 +8,7 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { nextNo, round2, todayLocal } from '../common/utils/no-generator';
+import { formatDateTime, formatDate,  nextNo, round2, todayLocal  } from '../common/utils/no-generator';
 import type { OrderItemLine, PageResult, SaleOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
@@ -294,7 +294,7 @@ export class SaleOrdersService {
 
   private toItem(o: SaleOrderEntity): SaleOrderItem {
     const dateStr =
-      typeof o.orderDate === 'string' ? o.orderDate : (o.orderDate as unknown as Date).toISOString().slice(0, 10);
+      typeof o.orderDate === 'string' ? o.orderDate : formatDate(o.orderDate);
     return {
       id: o.id,
       orderNo: o.orderNo,
@@ -305,7 +305,7 @@ export class SaleOrdersService {
       paidAmount: o.paidAmount,
       status: o.status,
       remark: o.remark ?? undefined,
-      createdAt: o.createdAt.toISOString().slice(0, 19).replace('T', ' '),
+      createdAt: formatDateTime(o.createdAt),
     };
   }
 }
