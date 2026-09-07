@@ -20,6 +20,13 @@ export class AiMessageEntity extends TenantBaseEntity {
   @Column({ type: 'text', nullable: true, comment: '交互卡片 JSON 数组' })
   cards: string;
 
+  @Column({
+    type: 'text',
+    nullable: true,
+    comment: '思考模式的思维链内容（带 tools 请求需回传）',
+  })
+  reasoningContent: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

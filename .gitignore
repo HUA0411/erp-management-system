@@ -11,8 +11,8 @@ web/dist/
 .env.local
 *.local
 
-# logs
-logs/
+# logs（仅忽略仓库根的 logs 目录，避免误伤 src/logs 源码模块）
+/logs/
 *.log
 npm-debug.log*
 

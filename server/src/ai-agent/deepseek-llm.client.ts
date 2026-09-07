@@ -45,17 +45,28 @@ export interface ConnectionTestResult {
   message: string;
 }
 
+/** 对话选项：思考强度与流式回调 */
+export interface ChatOptions {
+  /**
+   * 思考强度（DeepSeek v4 思考模式）：low / medium / high / max。
+   * 默认 high。仅对 DeepSeek 思考模型生效，其它服务商忽略。
+   */
+  reasoningEffort?: string;
+  /** 流式文本增量回调（工具调用参数不回调） */
+  onDelta?: (delta: LlmDelta) => void;
+}
+
 /** 模型客户端抽象：测试注入 FakeLlmClient，生产走 OpenAI 兼容协议 */
 export interface AgentLlmClient {
   /**
-   * 对话（支持流式）：onDelta 每收到一段文本增量即回调（工具调用参数不回调）。
+   * 对话（支持流式）：opts.onDelta 每收到一段文本增量即回调（工具调用参数不回调）。
    * 实现可选择忽略 onDelta（非流式），但建议支持以获得流式体验。
    */
   chat(
     credentials: LlmCredentials,
     messages: LlmMessage[],
     tools: ToolDescriptor[],
-    onDelta?: (delta: LlmDelta) => void,
+    opts?: ChatOptions,
   ): Promise<LlmChatResult>;
 
   /** 连接测试：用最小请求验证 Key/地址/模型是否可用 */
@@ -72,18 +83,33 @@ export class DeepSeekLlmClient implements AgentLlmClient {
     credentials: LlmCredentials,
     messages: LlmMessage[],
     tools: ToolDescriptor[],
-    onDelta?: (delta: LlmDelta) => void,
+    opts?: ChatOptions,
   ): Promise<LlmChatResult> {
     const url = `${credentials.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    const body = {
+    // DeepSeek v4 思考模式：默认开启思考，强度由 reasoning_effort 控制；
+    // 思考模式下 temperature/top_p 等不生效，因此 DeepSeek 不发 temperature。
+    // 非 DeepSeek（其它 OpenAI 兼容服务商）仍沿用原逻辑，发送 temperature 不加思考参数。
+    const body: Record<string, unknown> = {
       model: credentials.model,
       messages,
       tools,
       tool_choice: 'auto',
-      temperature: 0.2,
       max_tokens: 4096,
       stream: true,
     };
+    if (this.isDeepSeek(credentials)) {
+      // 思考强度：none=关闭思考（thinking.disabled，不设 reasoning_effort）
+      //            low/high/max=开启思考 + reasoning_effort（默认 high）
+      const effort = opts?.reasoningEffort || 'high';
+      if (effort === 'none') {
+        body.thinking = { type: 'disabled' };
+      } else {
+        body.thinking = { type: 'enabled' };
+        body.reasoning_effort = effort;
+      }
+    } else {
+      body.temperature = 0.2;
+    }
 
     let res: Response;
     try {
@@ -158,7 +184,7 @@ export class DeepSeekLlmClient implements AgentLlmClient {
           if (!delta) continue;
           if (delta.content) {
             content += delta.content;
-            onDelta?.({ text: delta.content });
+            opts?.onDelta?.({ text: delta.content });
           }
           if (delta.reasoning_content) {
             reasoningContent += delta.reasoning_content;
@@ -214,5 +240,10 @@ export class DeepSeekLlmClient implements AgentLlmClient {
     } catch {
       return { ok: false, message: '无法连接服务，请检查 API 地址与网络' };
     }
+  }
+
+  /** 是否为 DeepSeek 官方端点：仅对 DeepSeek 发送 thinking/reasoning_effort（思考模式） */
+  private isDeepSeek(credentials: LlmCredentials): boolean {
+    return /deepseek\.com/i.test(credentials.baseUrl) || /^deepseek[-/]/i.test(credentials.model);
   }
 }

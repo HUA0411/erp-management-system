@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class AiChatDto {
   @IsString()
@@ -8,6 +8,12 @@ export class AiChatDto {
   @IsOptional()
   @IsInt()
   conversationId?: number;
+
+  /** 思考强度（DeepSeek v4 思考模式）：none=关闭思考 / low / high / max，默认 high */
+  @IsOptional()
+  @IsString()
+  @IsIn(['none', 'low', 'high', 'max'], { message: '思考强度不合法' })
+  reasoningEffort?: string;
 }
 
 export class AiConfigDto {

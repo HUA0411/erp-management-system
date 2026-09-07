@@ -57,7 +57,7 @@ export class AgentService {
 
   async chat(
     user: TenantContextData,
-    dto: { message: string; conversationId?: number },
+    dto: { message: string; conversationId?: number; reasoningEffort?: string },
     emit?: (event: AgentStreamEvent) => void,
   ): Promise<AiChatResult> {
     const message = dto.message?.trim();
@@ -96,11 +96,18 @@ export class AgentService {
       ? ['*']
       : await this.permissionService.getUserPermissionCodes(user.userId!, companyId);
 
+    // 思考模式（带 tools）要求历史轮次的 reasoning_content 也回传，否则 API 会 400
     const llmMessages: LlmMessage[] = [
       { role: 'system', content: this.systemPrompt },
       ...history
         .filter((m) => m.content)
-        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        .map((m) => {
+          const msg: LlmMessage = { role: m.role as 'user' | 'assistant', content: m.content };
+          if (m.role === 'assistant' && m.reasoningContent) {
+            msg.reasoning_content = m.reasoningContent;
+          }
+          return msg;
+        }),
       { role: 'user', content: message },
     ];
 
@@ -114,19 +121,25 @@ export class AgentService {
     const cards: AiCard[] = [];
     let finalReply = '';
     let clarified = false;
+    let finalReasoning: string | null = null;
+    const reasoningEffort = dto.reasoningEffort ?? 'high';
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const res = await this.llm.chat(
         credentials,
         llmMessages,
         tools,
-        emit
-          ? (delta) => {
-              if (delta.text) emit({ type: 'text', text: delta.text });
-            }
-          : undefined,
+        {
+          reasoningEffort,
+          onDelta: emit
+            ? (delta) => {
+                if (delta.text) emit({ type: 'text', text: delta.text });
+              }
+            : undefined,
+        },
       );
       if (res.content) finalReply = res.content;
+      if (res.reasoningContent) finalReasoning = res.reasoningContent;
 
       if (!res.toolCalls.length) break;
 
@@ -244,6 +257,7 @@ export class AgentService {
       role: 'assistant',
       content: finalReply,
       cards: cards.length ? JSON.stringify(cards) : undefined,
+      reasoningContent: finalReasoning ?? undefined,
     });
 
     this.logger.log(

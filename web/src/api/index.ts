@@ -204,7 +204,7 @@ export const agentApi = {
     }),
   saveConfig: (data: AiConfigPayload) =>
     http.put<never, AiConfigView>('/ai-agent/config', data),
-  chat: (data: { message: string; conversationId?: number }) =>
+  chat: (data: { message: string; conversationId?: number; reasoningEffort?: string }) =>
     http.post<never, AiChatResult>('/ai-agent/chat', data, { timeout: 60000 }),
   pending: () => http.get<never, AiPendingAction[]>('/ai-agent/pending'),
   confirm: (id: number) =>

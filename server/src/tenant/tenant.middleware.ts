@@ -41,6 +41,11 @@ export class TenantMiddleware implements NestMiddleware {
         // 令牌无效视为未认证
       }
     }
+    // 记录请求来源，供操作审计（logs 模块）使用
+    const forwardedIp = (req.headers['x-forwarded-for'] as string) || '';
+    data.method = req.method;
+    data.path = req.originalUrl || req.url;
+    data.ip = req.ip || forwardedIp.split(',')[0]?.trim() || undefined;
     TenantContext.run(data, () => next());
   }
 }

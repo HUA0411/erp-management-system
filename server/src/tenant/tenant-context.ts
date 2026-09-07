@@ -6,6 +6,10 @@ export interface TenantContextData {
   userId?: number;
   username?: string;
   isSuperAdmin?: boolean;
+  /** 请求信息（供操作审计 logs 模块记录，可选） */
+  method?: string;
+  path?: string;
+  ip?: string;
 }
 
 /**

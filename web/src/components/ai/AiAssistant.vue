@@ -88,10 +88,18 @@
               />
             </el-form-item>
             <el-form-item label="模型">
-              <el-input
-                v-model="configForm.model"
-                :placeholder="currentPreset?.modelPlaceholder || '填写模型名'"
-              />
+              <div class="model-field">
+                <el-input
+                  v-model="configForm.model"
+                  :placeholder="currentPreset?.modelPlaceholder || '填写模型名'"
+                />
+                <a
+                  class="model-link"
+                  href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >去获取模型</a>
+              </div>
             </el-form-item>
             <div v-if="currentPreset?.hint" class="config-hint">{{ currentPreset.hint }}</div>
             <div class="config-actions">
@@ -182,10 +190,26 @@
               @keydown.enter.exact.prevent="send"
             />
             <div class="input-actions">
-              <span class="input-tip">Enter 发送</span>
-              <el-button type="primary" :loading="thinking" :disabled="!input.trim()" @click="send">
-                发送
-              </el-button>
+              <div class="effort-control" title="思考强度（DeepSeek 思考模式）">
+                <span class="effort-label">思考强度</span>
+                <el-slider
+                  v-model="effortValue"
+                  :min="1"
+                  :max="4"
+                  :step="1"
+                  :show-tooltip="true"
+                  :format-tooltip="formatEffort"
+                  :marks="effortMarks"
+                  :disabled="thinking"
+                  class="effort-slider"
+                />
+              </div>
+              <div class="input-right">
+                <span class="input-tip">Enter 发送</span>
+                <el-button type="primary" :loading="thinking" :disabled="!input.trim()" @click="send">
+                  发送
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -226,7 +250,7 @@ const configForm = ref({
   provider: 'deepseek',
   apiKey: '',
   baseUrl: 'https://api.deepseek.com/v1',
-  model: 'deepseek-chat',
+  model: '',
 });
 
 const currentPreset = computed(
@@ -238,6 +262,14 @@ const input = ref('');
 const thinking = ref(false);
 const conversationId = ref<number | null>(null);
 const scrollRef = ref<HTMLElement>();
+
+// 思考强度（DeepSeek v4 思考模式）：none=关闭思考 / low / high / max，默认 high
+const effortOptions = ['none', 'low', 'high', 'max'] as const;
+const effortValue = ref(3); // 1=none 2=low 3=high 4=max，默认 high
+const effortMarks: Record<number, string> = { 1: '关', 2: '低', 3: '高', 4: '最大' };
+const currentEffort = (): string => effortOptions[effortValue.value - 1];
+/** 滑块 tooltip 显示强度名称（而非数字） */
+const formatEffort = (v: number): string => effortMarks[v] || String(v);
 
 // 对话历史
 const conversations = ref<AiConversationBrief[]>([]);
@@ -316,13 +348,12 @@ function open() {
   if (!config.value) loadStatus();
 }
 
-/** 选择预设：自动填好 API 地址与默认模型 */
+/** 选择预设：自动填好 API 地址；模型留空，由用户自行填写完整模型名 */
 function onProviderChange(providerId: string) {
   const preset = aiProviderPresets.find((p) => p.id === providerId);
   if (!preset) return;
   configForm.value.baseUrl = preset.baseUrl;
-  if (preset.models.length) configForm.value.model = preset.models[0];
-  else configForm.value.model = '';
+  configForm.value.model = '';
 }
 
 /** 打开配置表单时回显当前已保存的服务配置 */
@@ -452,7 +483,11 @@ async function runChat(message: string) {
   scrollToBottom();
   try {
     await streamChat(
-      JSON.stringify({ message, conversationId: conversationId.value ?? undefined }),
+      JSON.stringify({
+        message,
+        conversationId: conversationId.value ?? undefined,
+        reasoningEffort: currentEffort(),
+      }),
       (evt) => {
         if (evt.type === 'text' && evt.text) {
           assistantMsg.content += evt.text;
@@ -586,6 +621,25 @@ function scrollToBottom() {
 </script>
 
 <style scoped lang="scss">
+.model-field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.model-link {
+  flex-shrink: 0;
+  color: #409eff;
+  text-decoration: underline;
+  font-size: 13px;
+  white-space: nowrap;
+
+  &:hover {
+    color: #2f6fd6;
+  }
+}
+
 .ai-fab-badge {
   position: fixed;
   right: 24px;
@@ -882,11 +936,37 @@ function scrollToBottom() {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-top: 8px;
 
     .input-tip {
       font-size: 12px;
       color: #a3aec0;
+    }
+
+    .effort-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+
+      .effort-label {
+        font-size: 12px;
+        color: #5c6b8a;
+        white-space: nowrap;
+      }
+
+      .effort-slider {
+        width: 168px;
+        margin: 0 2px;
+      }
+    }
+
+    .input-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
     }
   }
 }

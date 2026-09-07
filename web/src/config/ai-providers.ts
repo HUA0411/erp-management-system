@@ -24,7 +24,7 @@ export const aiProviderPresets: AiProviderPreset[] = [
     name: 'DeepSeek 深度求索',
     baseUrl: 'https://api.deepseek.com/v1',
     models: ['deepseek-chat', 'deepseek-reasoner'],
-    modelPlaceholder: 'deepseek-chat',
+    modelPlaceholder: '请填写完整模型名（如 deepseek-chat）',
   },
   {
     id: 'zhipu',

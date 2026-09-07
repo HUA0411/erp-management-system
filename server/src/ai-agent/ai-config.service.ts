@@ -52,7 +52,7 @@ export class AiConfigService implements OnModuleInit {
       canConfigure: await this.canConfigure(user),
       provider: cfg?.provider ?? 'custom',
       baseUrl: cfg?.baseUrl ?? 'https://api.deepseek.com',
-      model: cfg?.model ?? 'deepseek-chat',
+      model: cfg?.model ?? '',
       keyMasked: cfg ? this.maskKey(cfg.apiKey) : undefined,
     };
   }
@@ -68,12 +68,17 @@ export class AiConfigService implements OnModuleInit {
     if (!apiKey) {
       throw new BusinessException('请填写 API Key', 40033);
     }
+    // 模型名不提供默认值：必须由用户填写完整模型名
+    const model = dto.model?.trim() || existing?.model;
+    if (!model) {
+      throw new BusinessException('请填写模型名', 40034);
+    }
     const next = {
       companyId,
       apiKey,
       provider: dto.provider?.trim() || existing?.provider || 'custom',
       baseUrl: dto.baseUrl?.trim() || existing?.baseUrl || 'https://api.deepseek.com',
-      model: dto.model?.trim() || existing?.model || 'deepseek-chat',
+      model,
       updatedBy: user.userId,
     };
 
