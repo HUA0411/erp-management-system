@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { TenantContext } from '../tenant/tenant-context';
-import { todayLocal } from '../common/utils/no-generator';
+import { todayLocal, formatDate } from '../common/utils/no-generator';
 import type { DashboardSummary, RecentOrder, TopProduct, TrendPoint } from '@erp/shared';
 
 @Injectable()
@@ -136,7 +136,9 @@ export class DashboardService {
       partnerName: r.partnerName,
       amount: Number(r.amount),
       status: r.status as RecentOrder['status'],
-      date: String(r.date).slice(0, 10),
+      // order_date 是 MySQL DATE 列，经 mysql2 会变成 JS Date；
+      // 直接 String(d).slice(0,10) 会得到英文的 "Mon Sep 07"。
+      date: formatDate(r.date),
     }));
   }
 

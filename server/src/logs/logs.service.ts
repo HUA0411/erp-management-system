@@ -3,6 +3,27 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OperationLogEntity } from '../entities/operation-log.entity';
 import { TenantContext } from '../tenant/tenant-context';
+import { formatDateTime } from '../common/utils/no-generator';
+
+/** 操作日志查询条件 */
+export interface LogQuery {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+  module?: string;
+}
+
+/** 操作日志列表项（对应前端 OperationLogItem） */
+export interface LogItem {
+  id: number;
+  username: string;
+  module: string;
+  action: string;
+  method: string;
+  path: string;
+  ip: string;
+  createdAt: string;
+}
 
 /**
  * 操作审计日志。
@@ -38,6 +59,50 @@ export class LogsService {
     } catch (err) {
       this.logger.warn(`[审计] 操作日志记录失败: ${(err as Error).message}`);
     }
+  }
+
+  /**
+   * 分页查询操作日志（前端「系统管理 → 操作日志」页）。
+   * 严格按租户隔离：company_id 条件恒带，跨租户不可见。
+   */
+  async list(query: LogQuery): Promise<{ list: LogItem[]; total: number; page: number; pageSize: number }> {
+    const { page, pageSize, keyword, module } = query;
+    const companyId = TenantContext.companyId;
+
+    const qb = this.logRepo
+      .createQueryBuilder('l')
+      .where('l.company_id = :cid', { cid: companyId });
+
+    if (module) {
+      qb.andWhere('l.module = :module', { module });
+    }
+    if (keyword) {
+      qb.andWhere('(l.username LIKE :kw OR l.module LIKE :kw OR l.action LIKE :kw)', {
+        kw: `%${keyword}%`,
+      });
+    }
+
+    const [rows, total] = await qb
+      .orderBy('l.id', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return {
+      list: rows.map((l) => ({
+        id: l.id,
+        username: l.username ?? '',
+        module: l.module,
+        action: l.action,
+        method: l.method,
+        path: l.path,
+        ip: l.ip ?? '',
+        createdAt: formatDateTime(l.createdAt),
+      })),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   private truncate(params: unknown, max = 5000): string {

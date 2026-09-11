@@ -86,11 +86,15 @@ export class AgentService {
     }
 
     // 历史（最近 N 条）→ 上下文延续
-    const history = await this.msgRepo.find({
+    // 注意：必须先按 id DESC 取"最近 N 条"，再 reverse 成时间正序。
+    // 直接用 order: ASC + take 拿到的是**最早** N 条，对话超过 N 条后
+    // 模型就永远看不到后续内容（表现为"聊着聊着失忆"）。
+    const recentDesc = await this.msgRepo.find({
       where: { conversationId, companyId },
-      order: { id: 'ASC' },
+      order: { id: 'DESC' },
       take: MAX_HISTORY,
     });
+    const history = recentDesc.reverse();
 
     const permissionCodes = user.isSuperAdmin
       ? ['*']
