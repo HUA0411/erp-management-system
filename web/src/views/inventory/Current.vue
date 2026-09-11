@@ -19,6 +19,14 @@
 
       <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无库存记录">
         <el-table v-loading="loading" :data="list" :row-class-name="rowClass">
+          <template #empty>
+            <EmptyState
+              variant="first"
+              title="这里还没有库存记录"
+              desc="换个关键字或清空筛选试试。新库的话先录商品再做一次入库，这里就会有数了。"
+              compact
+            />
+          </template>
           <el-table-column prop="productCode" label="编码" width="110" />
           <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
           <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
@@ -97,6 +105,7 @@ import { EditPen } from '@element-plus/icons-vue';
 import { inventoryApi, productApi } from '@/api';
 import { fmtMoney, fmtQty } from '@/utils';
 import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import type { InventoryItem } from '@erp/shared';
 
 /** 窄屏卡片字段：库存页只看「哪个商品、还剩多少、够不够」，其余次要 */

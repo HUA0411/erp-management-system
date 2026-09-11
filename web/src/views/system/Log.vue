@@ -14,6 +14,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="all-good"
+            title="这段时间没有操作日志"
+            desc="说明没人改动过数据。换个时间范围或关键字再试试。"
+            compact
+          />
+        </template>
         <el-table-column prop="createdAt" label="时间" width="170" />
         <el-table-column prop="username" label="操作人" width="110" />
         <el-table-column prop="module" label="模块" width="120" />
@@ -40,6 +48,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import { logApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import type { OperationLogItem } from '@erp/shared';
 
 const loading = ref(false);

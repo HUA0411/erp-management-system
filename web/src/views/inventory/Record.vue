@@ -25,6 +25,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="还没有库存流水"
+            desc="每一次入库、出库、手工调整都会在这里留一条记录。换个筛选条件再试试。"
+            compact
+          />
+        </template>
         <el-table-column prop="createdAt" label="时间" width="165" />
         <el-table-column prop="productName" label="商品" min-width="170" show-overflow-tooltip />
         <el-table-column label="类型" width="90" align="center">
@@ -73,6 +81,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import { inventoryApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtQty, INVENTORY_TYPE } from '@/utils';
 import type { InventoryRecordItem } from '@erp/shared';
 

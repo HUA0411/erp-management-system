@@ -11,6 +11,14 @@
         :tree-props="{ children: 'children' }"
         default-expand-all
       >
+        <template #empty>
+          <EmptyState
+            variant="first"
+            title="还没有权限项"
+            desc="权限树由系统内置，正常情况下不会是空的 —— 如果看到这行，说明数据库初始化没跑完。"
+            compact
+          />
+        </template>
         <el-table-column label="名称" min-width="200">
           <template #default="{ row }">
             <el-input v-if="editingId === row.id" v-model="editForm.name" size="small" style="width: 160px" />
@@ -61,6 +69,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { permissionApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import type { PermissionNode } from '@erp/shared';
 
 const loading = ref(false);

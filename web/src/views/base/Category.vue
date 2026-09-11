@@ -7,6 +7,14 @@
         >
       </div>
       <el-table :data="tree" row-key="id" :tree-props="{ children: 'children' }" default-expand-all>
+        <template #empty>
+          <EmptyState
+            variant="first"
+            title="还没有商品分类"
+            desc="先建几个分类（比如「电子产品」「办公耗材」），录商品时才好归类。"
+            compact
+          />
+        </template>
         <el-table-column prop="name" label="分类名称" min-width="200" />
         <el-table-column label="子分类数" width="120" align="center">
           <template #default="{ row }">{{ row.children?.length || 0 }}</template>
@@ -74,6 +82,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import { categoryApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 
 interface CategoryRow {
   id: number;

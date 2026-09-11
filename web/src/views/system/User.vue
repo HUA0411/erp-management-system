@@ -18,6 +18,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="这里还没有用户"
+            desc="改成别的关键字或清空筛选试试。新租户的话，管理员账号是在初始化时创建的。"
+            compact
+          />
+        </template>
         <el-table-column prop="username" label="用户名" width="130" />
         <el-table-column prop="realName" label="姓名" width="130" />
         <el-table-column label="角色" min-width="180">
@@ -153,6 +161,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { roleApi, userApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import type { UserItem } from '@erp/shared';
 
 const loading = ref(false);

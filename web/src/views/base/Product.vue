@@ -44,6 +44,14 @@
         empty-text="暂无商品，点右上角「新增商品」添加"
       >
         <el-table v-loading="loading" :data="list">
+          <template #empty>
+            <EmptyState
+              variant="first"
+              title="这里还没有商品"
+              desc="换个关键字或清空筛选试试。确实是新库的话，点右上角「新增商品」把要卖的东西建进来。"
+              compact
+            />
+          </template>
           <el-table-column prop="code" label="编码" width="110" />
           <el-table-column prop="name" label="商品名称" min-width="180" show-overflow-tooltip />
           <el-table-column prop="categoryName" label="分类" width="110" />
@@ -204,6 +212,7 @@ import { Plus, Search } from '@element-plus/icons-vue';
 import { categoryApi, productApi, supplierApi } from '@/api';
 import { fmtMoney } from '@/utils';
 import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import type { ProductItem, SupplierItem } from '@erp/shared';
 
 /**

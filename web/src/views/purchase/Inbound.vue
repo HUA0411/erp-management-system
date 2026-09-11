@@ -22,6 +22,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="还没有入库单"
+            desc="采购单确认后点「入库」才会生成入库单，库存也在这时候增加。"
+            compact
+          />
+        </template>
         <el-table-column prop="inboundNo" label="入库单号" width="170" />
         <el-table-column prop="supplierName" label="供应商" min-width="180" show-overflow-tooltip />
         <el-table-column prop="inboundDate" label="入库日期" width="110" />
@@ -86,6 +94,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import { purchaseApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtMoney } from '@/utils';
 import type { PurchaseOrderItem } from '@erp/shared';
 

@@ -10,6 +10,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="all-good"
+            title="每个货位都在安全线以上"
+            desc="当前没有低于安全库存的商品。补货计划可以缓一缓 —— 这是好事，不是「没数据」。"
+            compact
+          />
+        </template>
         <el-table-column prop="productCode" label="编码" width="110" />
         <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
@@ -46,6 +54,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { inventoryApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtQty } from '@/utils';
 import type { InventoryItem } from '@erp/shared';
 

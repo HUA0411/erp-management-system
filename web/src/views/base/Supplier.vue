@@ -29,6 +29,14 @@
 
       <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无供应商">
         <el-table v-loading="loading" :data="list">
+          <template #empty>
+            <EmptyState
+              variant="no-doc"
+              title="这里还没有供应商"
+              desc="换个关键字或清空筛选试试。新库的话先建供应商，采购单才能选到它。"
+              compact
+            />
+          </template>
           <el-table-column prop="code" label="编码" width="110" />
           <el-table-column prop="name" label="供应商名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="contact" label="联系人" width="110" />
@@ -124,6 +132,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { supplierApi } from '@/api';
 import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import type { SupplierItem } from '@erp/shared';
 
 const cardFields: ListField<SupplierItem>[] = [

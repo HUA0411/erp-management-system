@@ -9,7 +9,13 @@
       <span>加载中…</span>
     </div>
 
-    <el-empty v-else-if="!items.length" :description="emptyText" :image-size="72" />
+    <EmptyState
+      v-else-if="!items.length"
+      :variant="emptyVariant"
+      :title="emptyText"
+      :desc="emptyDesc"
+      compact
+    />
 
     <template v-else>
       <article v-for="(row, idx) in items" :key="idx" class="rcard">
@@ -38,6 +44,8 @@
 <script setup lang="ts" generic="T extends object">
 import { computed } from 'vue';
 import { Loading } from '@element-plus/icons-vue';
+import EmptyState from '@/components/EmptyState.vue';
+import type { ShelfVariant } from '@/components/ShelfArt.vue';
 import { useIsMobile } from '@/composables/use-breakpoint';
 
 export interface ListField<T> {
@@ -64,8 +72,10 @@ const props = withDefaults(
     fields: ListField<T>[];
     loading?: boolean;
     emptyText?: string;
+    emptyDesc?: string;
+    emptyVariant?: ShelfVariant;
   }>(),
-  { loading: false, emptyText: '暂无数据' },
+  { loading: false, emptyText: '还没有数据', emptyDesc: '', emptyVariant: 'first' },
 );
 
 const isMobile = useIsMobile();

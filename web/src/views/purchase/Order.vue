@@ -36,6 +36,14 @@
 
       <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无采购订单">
         <el-table v-loading="loading" :data="list">
+          <template #empty>
+            <EmptyState
+              variant="no-doc"
+              title="这里还没有采购单"
+              desc="换个单号或清空筛选试试。新库的话开第一张：选供应商 → 加商品 → 确认 → 入库，库存会自动增加。"
+              compact
+            />
+          </template>
           <el-table-column prop="orderNo" label="单号" width="170" />
           <el-table-column prop="supplierName" label="供应商" min-width="180" show-overflow-tooltip />
           <el-table-column prop="orderDate" label="订单日期" width="110" />
@@ -322,6 +330,7 @@ import { Plus, Search } from '@element-plus/icons-vue';
 import { productApi, purchaseApi, supplierApi } from '@/api';
 import { fmtMoney, ORDER_STATUS, today } from '@/utils';
 import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import type { OrderItemLine, PurchaseOrderItem } from '@erp/shared';
 
 /**

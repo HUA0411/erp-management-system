@@ -31,6 +31,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="还没有收付款单"
+            desc="收款和付款记录会汇总到「应收应付」，影响往来余额。换个筛选条件再试试。"
+            compact
+          />
+        </template>
         <el-table-column prop="docNo" label="单号" width="170" />
         <el-table-column label="类型" width="80" align="center">
           <template #default="{ row }">
@@ -130,6 +138,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { customerApi, financeApi, supplierApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtMoney, PAYMENT_TYPE, today } from '@/utils';
 import type { PaymentItem } from '@erp/shared';
 

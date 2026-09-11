@@ -29,6 +29,14 @@
 
       <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无客户">
         <el-table v-loading="loading" :data="list">
+          <template #empty>
+            <EmptyState
+              variant="no-doc"
+              title="这里还没有客户"
+              desc="换个关键字或清空筛选试试。新库的话先建几个客户，开销售单时才有得选。"
+              compact
+            />
+          </template>
           <el-table-column prop="code" label="编码" width="110" />
           <el-table-column prop="name" label="客户名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="contact" label="联系人" width="110" />
@@ -146,6 +154,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { customerApi } from '@/api';
 import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import type { CustomerItem } from '@erp/shared';
 
 const cardFields: ListField<CustomerItem>[] = [

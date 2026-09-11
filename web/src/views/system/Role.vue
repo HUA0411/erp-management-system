@@ -18,6 +18,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="这里还没有角色"
+            desc="角色决定「能看到哪些菜单、能做哪些操作」。先建一个角色再去「用户管理」分配。"
+            compact
+          />
+        </template>
         <el-table-column prop="name" label="角色名称" width="160" />
         <el-table-column prop="code" label="编码" width="160" />
         <el-table-column prop="remark" label="说明" min-width="200" show-overflow-tooltip />
@@ -114,6 +122,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import type { ElTree } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { permissionApi, roleApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import type { PermissionNode, RoleItem } from '@erp/shared';
 
 const loading = ref(false);

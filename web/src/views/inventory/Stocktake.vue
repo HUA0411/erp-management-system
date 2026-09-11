@@ -28,6 +28,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="这里还没有盘点单"
+            desc="盘点是用来核对「账上写的」和「货架上实际的」差多少。新建一张就能开始。"
+            compact
+          />
+        </template>
         <el-table-column prop="stocktakeNo" label="盘点单号" width="170" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
@@ -180,6 +188,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { productApi, stocktakeApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtQty } from '@/utils';
 
 const loading = ref(false);

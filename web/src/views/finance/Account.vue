@@ -25,6 +25,14 @@
       <el-tabs v-model="activeTab">
         <el-tab-pane label="应收（客户）" name="receivable">
           <el-table v-loading="loading" :data="receivableList" :row-class-name="balanceClass">
+            <template #empty>
+              <EmptyState
+                variant="all-good"
+                title="目前没有往来欠款"
+                desc="应收应付都是 0，说明该收的收回来了、该付的也付清了。"
+                compact
+              />
+            </template>
             <el-table-column prop="partnerName" label="客户" min-width="200" show-overflow-tooltip />
             <el-table-column label="订单总额" width="140" align="right">
               <template #default="{ row }"
@@ -79,6 +87,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { financeApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtMoney } from '@/utils';
 import type { AccountSummary } from '@erp/shared';
 

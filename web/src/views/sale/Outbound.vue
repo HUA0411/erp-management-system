@@ -22,6 +22,14 @@
       </div>
 
       <el-table v-loading="loading" :data="list">
+        <template #empty>
+          <EmptyState
+            variant="no-doc"
+            title="还没有出库单"
+            desc="销售单确认后点「出库」才会生成出库单，库存也在这时候扣减。"
+            compact
+          />
+        </template>
         <el-table-column prop="outboundNo" label="出库单号" width="170" />
         <el-table-column prop="customerName" label="客户" min-width="180" show-overflow-tooltip />
         <el-table-column prop="outboundDate" label="出库日期" width="110" />
@@ -86,6 +94,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import { saleApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
 import { fmtMoney } from '@/utils';
 import type { SaleOrderItem } from '@erp/shared';
 
