@@ -2,7 +2,12 @@
   <div class="page">
     <!-- 统计卡片 -->
     <div class="stat-grid">
-      <div class="page-card stat-card" v-for="(s, i) in stats" :key="s.label" :style="{ animationDelay: `${i * 60}ms` }">
+      <div
+        v-for="(s, i) in stats"
+        :key="s.label"
+        class="page-card stat-card"
+        :style="{ animationDelay: `${i * 60}ms` }"
+      >
         <div class="stat-icon" :style="{ background: s.bg, color: s.color }">
           <el-icon :size="22"><component :is="s.icon" /></el-icon>
         </div>
@@ -10,7 +15,7 @@
           <div class="stat-value num">{{ s.value }}</div>
           <div class="stat-label">{{ s.label }}</div>
         </div>
-        <div class="stat-trend" v-if="s.tip">{{ s.tip }}</div>
+        <div v-if="s.tip" class="stat-trend">{{ s.tip }}</div>
       </div>
     </div>
 
@@ -46,7 +51,9 @@
           <el-table-column prop="orderNo" label="单号" min-width="150" />
           <el-table-column prop="partnerName" label="往来单位" min-width="140" show-overflow-tooltip />
           <el-table-column label="金额" width="120" align="right">
-            <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.amount) }}</span></template>
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.amount) }}</span></template
+            >
           </el-table-column>
           <el-table-column label="状态" width="90">
             <template #default="{ row }">
@@ -61,10 +68,12 @@
       <div class="page-card">
         <div class="card-head">
           <span class="card-title">库存预警</span>
-          <el-button link type="primary" size="small" @click="$router.push('/inventory/alert')">查看全部</el-button>
+          <el-button link type="primary" size="small" @click="$router.push('/inventory/alert')"
+            >查看全部</el-button
+          >
         </div>
         <div v-if="alerts.length" class="alert-list">
-          <div class="alert-item" v-for="a in alerts.slice(0, 6)" :key="a.productId">
+          <div v-for="a in alerts.slice(0, 6)" :key="a.productId" class="alert-item">
             <div class="alert-name">
               <span>{{ a.productName }}</span>
               <el-tag type="danger" size="small" effect="plain">低库存</el-tag>
@@ -80,14 +89,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Money, Tickets, Warning, TrendCharts, Box, Coin, ShoppingCart } from '@element-plus/icons-vue';
+import { Money, Warning, Coin, ShoppingCart } from '@element-plus/icons-vue';
 import { dashboardApi, inventoryApi } from '@/api';
-import { echarts, fontsReady, token, useEChart, type EChartsCoreOption } from '@/utils/echarts';
+import { fontsReady, token, useEChart, type EChartsCoreOption } from '@/utils/echarts';
 import { fmtMoney, fmtQty, ORDER_STATUS } from '@/utils';
 import type { DashboardSummary, InventoryItem, RecentOrder, TopProduct, TrendPoint } from '@erp/shared';
-
-const router = useRouter();
 
 const summary = ref<DashboardSummary | null>(null);
 const trendPoints = ref<TrendPoint[]>([]);
@@ -143,8 +149,18 @@ function renderTrend() {
   const option: EChartsCoreOption = {
     tooltip: { trigger: 'axis', valueFormatter: (v: unknown) => `¥${fmtMoney(Number(v))}` },
     grid: { left: 16, right: 16, top: 30, bottom: 8, containLabel: true },
-    xAxis: { type: 'category', data: dates, boundaryGap: false, axisLine: { lineStyle: { color: token('--border') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: token('--border-soft') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: token('--border') } },
+      axisLabel: { color: token('--text-3'), fontSize: 11 },
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: token('--border-soft') } },
+      axisLabel: { color: token('--text-3'), fontSize: 11 },
+    },
     series: [
       {
         name: '销售额',
@@ -158,7 +174,10 @@ function renderTrend() {
         areaStyle: {
           color: {
             type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: 'rgba(36,86,166,0.28)' },
               { offset: 1, color: 'rgba(36,86,166,0.02)' },
@@ -180,14 +199,37 @@ function renderTop() {
     tooltip: { trigger: 'axis', valueFormatter: (v: unknown) => `${fmtQty(Number(v))}` },
     // top/bottom 要给首个/末个类目标签留出半个行高，否则 Y 轴第一项文字被裁掉
     grid: { left: 16, right: 30, top: 20, bottom: 6, containLabel: true },
-    xAxis: { type: 'value', splitLine: { lineStyle: { color: token('--border-soft') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
-    yAxis: { type: 'category', data: names, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: token('--text-2'), fontSize: 11 } },
+    xAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: token('--border-soft') } },
+      axisLabel: { color: token('--text-3'), fontSize: 11 },
+    },
+    yAxis: {
+      type: 'category',
+      data: names,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: token('--text-2'), fontSize: 11 },
+    },
     series: [
       {
         type: 'bar',
         data: qtys,
         barWidth: 12,
-        itemStyle: { borderRadius: [0, 6, 6, 0], color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: token('--brand-strong') }, { offset: 1, color: token('--brand-soft') }] } },
+        itemStyle: {
+          borderRadius: [0, 6, 6, 0],
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 1,
+            y2: 0,
+            colorStops: [
+              { offset: 0, color: token('--brand-strong') },
+              { offset: 1, color: token('--brand-soft') },
+            ],
+          },
+        },
         label: { show: true, position: 'right', fontSize: 11, color: token('--text-3') },
       },
     ],

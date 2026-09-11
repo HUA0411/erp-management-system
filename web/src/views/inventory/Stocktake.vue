@@ -2,21 +2,38 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px" @change="load">
+        <el-select
+          v-model="query.status"
+          placeholder="全部状态"
+          clearable
+          style="width: 130px"
+          @change="load"
+        >
           <el-option label="草稿" value="draft" />
           <el-option label="已确认" value="confirmed" />
         </el-select>
-        <el-input v-model="query.keyword" placeholder="盘点单号" clearable style="width: 180px" @keyup.enter="load" @clear="load" />
+        <el-input
+          v-model="query.keyword"
+          placeholder="盘点单号"
+          clearable
+          style="width: 180px"
+          @keyup.enter="load"
+          @clear="load"
+        />
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
         <div class="spacer"></div>
-        <el-button v-permission="'inventory:stocktake:create'" type="primary" :icon="Plus" @click="openCreate">新建盘点单</el-button>
+        <el-button v-permission="'inventory:stocktake:create'" type="primary" :icon="Plus" @click="openCreate"
+          >新建盘点单</el-button
+        >
       </div>
 
-      <el-table :data="list" v-loading="loading">
+      <el-table v-loading="loading" :data="list">
         <el-table-column prop="stocktakeNo" label="盘点单号" width="170" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'draft' ? 'info' : 'success'" size="small">{{ row.status === 'draft' ? '草稿' : '已确认' }}</el-tag>
+            <el-tag :type="row.status === 'draft' ? 'info' : 'success'" size="small">{{
+              row.status === 'draft' ? '草稿' : '已确认'
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
@@ -24,16 +41,30 @@
         <el-table-column label="操作" width="160" align="center">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openDetail(row.id)">详情</el-button>
-            <el-popconfirm v-if="row.status === 'draft'" title="确认后按差异调整库存，确定？" @confirm="confirm(row)">
+            <el-popconfirm
+              v-if="row.status === 'draft'"
+              title="确认后按差异调整库存，确定？"
+              @confirm="confirm(row)"
+            >
               <template #reference>
-                <el-button v-permission="'inventory:stocktake:confirm'" link type="warning" size="small">确认盘点</el-button>
+                <el-button v-permission="'inventory:stocktake:confirm'" link type="warning" size="small"
+                  >确认盘点</el-button
+                >
               </template>
             </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-pagination class="pager" background layout="total, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" @change="load" />
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, prev, pager, next"
+        :total="total"
+        @change="load"
+      />
     </div>
 
     <!-- 新建盘点 -->
@@ -45,22 +76,52 @@
       <el-table :data="form.items" size="small" border max-height="360">
         <el-table-column label="商品" min-width="200">
           <template #default="{ row }">
-            <el-select v-model="row.productId" filterable placeholder="选择商品" style="width: 100%" @change="(id: number) => onPick(row, id)">
-              <el-option v-for="p in filteredOptions" :key="p.id" :label="`${p.name}（${p.code}）库存 ${fmtQty(p.quantity)}`" :value="p.id" />
+            <el-select
+              v-model="row.productId"
+              filterable
+              placeholder="选择商品"
+              style="width: 100%"
+              @change="(id: number) => onPick(row, id)"
+            >
+              <el-option
+                v-for="p in filteredOptions"
+                :key="p.id"
+                :label="`${p.name}（${p.code}）库存 ${fmtQty(p.quantity)}`"
+                :value="p.id"
+              />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="账面数量" width="110" align="right">
-          <template #default="{ row }"><span class="num">{{ fmtQty(row.bookQty) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num">{{ fmtQty(row.bookQty) }}</span></template
+          >
         </el-table-column>
         <el-table-column label="实盘数量" width="130">
           <template #default="{ row }">
-            <el-input-number v-model="row.actualQty" :min="0" :precision="2" size="small" style="width: 100%" @change="recalcDiff" />
+            <el-input-number
+              v-model="row.actualQty"
+              :min="0"
+              :precision="2"
+              size="small"
+              style="width: 100%"
+              @change="recalcDiff"
+            />
           </template>
         </el-table-column>
         <el-table-column label="差异" width="100" align="right">
           <template #default="{ row }">
-            <span class="num" :style="row.diffQty > 0 ? 'color:var(--success-text)' : row.diffQty < 0 ? 'color:var(--danger-text)' : ''">{{ fmtQty(row.diffQty) }}</span>
+            <span
+              class="num"
+              :style="
+                row.diffQty > 0
+                  ? 'color:var(--success-text)'
+                  : row.diffQty < 0
+                    ? 'color:var(--danger-text)'
+                    : ''
+              "
+              >{{ fmtQty(row.diffQty) }}</span
+            >
           </template>
         </el-table-column>
         <el-table-column label="操作" width="60" align="center">
@@ -82,7 +143,9 @@
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="盘点单号">{{ detail.stocktakeNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="detail.status === 'draft' ? 'info' : 'success'" size="small">{{ detail.status === 'draft' ? '草稿' : '已确认' }}</el-tag>
+            <el-tag :type="detail.status === 'draft' ? 'info' : 'success'" size="small">{{
+              detail.status === 'draft' ? '草稿' : '已确认'
+            }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ detail.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
@@ -93,7 +156,17 @@
           <el-table-column prop="actualQty" label="实盘" width="90" align="right" />
           <el-table-column label="差异" width="90" align="right">
             <template #default="{ row }">
-              <span class="num" :style="row.diffQty > 0 ? 'color:var(--success-text)' : row.diffQty < 0 ? 'color:var(--danger-text)' : ''">{{ fmtQty(row.diffQty) }}</span>
+              <span
+                class="num"
+                :style="
+                  row.diffQty > 0
+                    ? 'color:var(--success-text)'
+                    : row.diffQty < 0
+                      ? 'color:var(--danger-text)'
+                      : ''
+                "
+                >{{ fmtQty(row.diffQty) }}</span
+              >
             </template>
           </el-table-column>
         </el-table>
@@ -104,7 +177,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, type FormInstance } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { productApi, stocktakeApi } from '@/api';
 import { fmtQty } from '@/utils';
@@ -120,7 +193,6 @@ const saving = ref(false);
 const pickKeyword = ref('');
 const productOptions = ref<any[]>([]);
 const detail = ref<any>(null);
-const formRef = ref<FormInstance>();
 const form = reactive<{ remark: string; items: any[] }>({ remark: '', items: [] });
 
 const filteredOptions = computed(() => {
@@ -132,7 +204,11 @@ const filteredOptions = computed(() => {
 async function load() {
   loading.value = true;
   try {
-    const res = await stocktakeApi.list({ ...query, status: query.status || undefined, keyword: query.keyword || undefined });
+    const res = await stocktakeApi.list({
+      ...query,
+      status: query.status || undefined,
+      keyword: query.keyword || undefined,
+    });
     list.value = res.list;
     total.value = res.total;
   } finally {
@@ -148,7 +224,13 @@ async function openCreate() {
 }
 
 function addPick() {
-  form.items.push({ productId: undefined as unknown as number, productName: '', bookQty: 0, actualQty: 0, diffQty: 0 });
+  form.items.push({
+    productId: undefined as unknown as number,
+    productName: '',
+    bookQty: 0,
+    actualQty: 0,
+    diffQty: 0,
+  });
 }
 
 function onPick(row: any, id: number) {

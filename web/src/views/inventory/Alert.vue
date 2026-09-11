@@ -9,19 +9,29 @@
         </el-alert>
       </div>
 
-      <el-table :data="list" v-loading="loading">
+      <el-table v-loading="loading" :data="list">
         <el-table-column prop="productCode" label="编码" width="110" />
         <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
         <el-table-column prop="unit" label="单位" width="70" align="center" />
         <el-table-column label="当前库存" width="120" align="right">
-          <template #default="{ row }"><span class="num" style="color: var(--danger-text); font-weight: 700">{{ fmtQty(row.quantity) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num" style="color: var(--danger-text); font-weight: 700">{{
+              fmtQty(row.quantity)
+            }}</span></template
+          >
         </el-table-column>
         <el-table-column label="安全库存" width="110" align="right">
-          <template #default="{ row }"><span class="num">{{ fmtQty(row.safetyStock) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num">{{ fmtQty(row.safetyStock) }}</span></template
+          >
         </el-table-column>
         <el-table-column label="缺口" width="120" align="right">
-          <template #default="{ row }"><span class="num" style="color: var(--warning-text)">{{ fmtQty(row.safetyStock - row.quantity) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num" style="color: var(--warning-text)">{{
+              fmtQty(row.safetyStock - row.quantity)
+            }}</span></template
+          >
         </el-table-column>
         <el-table-column label="建议补货量" width="120" align="right">
           <template #default="{ row }">

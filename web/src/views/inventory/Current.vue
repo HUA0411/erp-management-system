@@ -2,45 +2,85 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="商品名称 / 编码" clearable style="width: 220px" @keyup.enter="load" @clear="load" />
+        <el-input
+          v-model="query.keyword"
+          placeholder="商品名称 / 编码"
+          clearable
+          style="width: 220px"
+          @keyup.enter="load"
+          @clear="load"
+        />
         <el-checkbox v-model="lowOnly" @change="load">仅看低库存</el-checkbox>
         <div class="spacer"></div>
-        <el-button v-permission="'inventory:adjust'" type="warning" :icon="EditPen" @click="openAdjust">库存调整</el-button>
+        <el-button v-permission="'inventory:adjust'" type="warning" :icon="EditPen" @click="openAdjust"
+          >库存调整</el-button
+        >
       </div>
 
-      <el-table :data="list" v-loading="loading" :row-class-name="rowClass">
-        <el-table-column prop="productCode" label="编码" width="110" />
-        <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
-        <el-table-column prop="unit" label="单位" width="70" align="center" />
-        <el-table-column label="当前库存" width="130" align="right">
-          <template #default="{ row }">
-            <span class="num" :style="row.isLow ? 'color:var(--danger-text);font-weight:700' : ''">{{ fmtQty(row.quantity) }}</span>
-            <el-tag v-if="row.isLow" type="danger" size="small" effect="plain" style="margin-left: 6px">预警</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="安全库存" width="110" align="right">
-          <template #default="{ row }"><span class="num">{{ fmtQty(row.safetyStock) }}</span></template>
-        </el-table-column>
-        <el-table-column label="库存金额" width="130" align="right">
-          <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.quantity * row.salePrice) }}</span></template>
-        </el-table-column>
-      </el-table>
+      <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无库存记录">
+        <el-table v-loading="loading" :data="list" :row-class-name="rowClass">
+          <el-table-column prop="productCode" label="编码" width="110" />
+          <el-table-column prop="productName" label="商品名称" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
+          <el-table-column prop="unit" label="单位" width="70" align="center" />
+          <el-table-column label="当前库存" width="130" align="right">
+            <template #default="{ row }">
+              <span class="num" :style="row.isLow ? 'color:var(--danger-text);font-weight:700' : ''">{{
+                fmtQty(row.quantity)
+              }}</span>
+              <el-tag v-if="row.isLow" type="danger" size="small" effect="plain" style="margin-left: 6px"
+                >预警</el-tag
+              >
+            </template>
+          </el-table-column>
+          <el-table-column label="安全库存" width="110" align="right">
+            <template #default="{ row }"
+              ><span class="num">{{ fmtQty(row.safetyStock) }}</span></template
+            >
+          </el-table-column>
+          <el-table-column label="库存金额" width="130" align="right">
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.quantity * row.salePrice) }}</span></template
+            >
+          </el-table-column>
+        </el-table>
+      </ResponsiveList>
 
-      <el-pagination class="pager" background layout="total, sizes, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" :page-sizes="[10, 20, 50]" @change="load" />
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        @change="load"
+      />
     </div>
 
     <el-dialog v-model="adjustVisible" title="库存调整" width="440px">
       <el-form ref="adjustRef" :model="adjustForm" :rules="adjustRules" label-width="90px">
         <el-form-item label="商品" prop="productId">
           <el-select v-model="adjustForm.productId" filterable placeholder="搜索商品" style="width: 100%">
-            <el-option v-for="p in productOptions" :key="p.id" :label="`${p.name}（${p.code}）`" :value="p.id" />
+            <el-option
+              v-for="p in productOptions"
+              :key="p.id"
+              :label="`${p.name}（${p.code}）`"
+              :value="p.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="变动数量" prop="delta">
-          <el-input-number v-model="adjustForm.delta" :precision="2" style="width: 100%" placeholder="正数=盘盈，负数=盘亏" />
+          <el-input-number
+            v-model="adjustForm.delta"
+            :precision="2"
+            style="width: 100%"
+            placeholder="正数=盘盈，负数=盘亏"
+          />
         </el-form-item>
-        <el-form-item label="原因"><el-input v-model="adjustForm.remark" type="textarea" :rows="2" placeholder="调整原因" /></el-form-item>
+        <el-form-item label="原因"
+          ><el-input v-model="adjustForm.remark" type="textarea" :rows="2" placeholder="调整原因"
+        /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="adjustVisible = false">取消</el-button>
@@ -56,7 +96,22 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { EditPen } from '@element-plus/icons-vue';
 import { inventoryApi, productApi } from '@/api';
 import { fmtMoney, fmtQty } from '@/utils';
+import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
 import type { InventoryItem } from '@erp/shared';
+
+/** 窄屏卡片字段：库存页只看「哪个商品、还剩多少、够不够」，其余次要 */
+const cardFields: ListField<InventoryItem>[] = [
+  { label: '商品名称', prop: 'productName', primary: true },
+  {
+    label: '库存状态',
+    badge: (r) => (r.isLow ? { text: '低于安全库存', type: 'danger' } : { text: '充足', type: 'success' }),
+  },
+  { label: '编码', prop: 'productCode' },
+  { label: '规格', prop: 'spec' },
+  { label: '当前库存', format: (r) => fmtQty(r.quantity), numeric: true },
+  { label: '安全库存', format: (r) => fmtQty(r.safetyStock), numeric: true },
+  { label: '库存金额', format: (r) => `¥${fmtMoney(r.quantity * r.salePrice)}`, numeric: true },
+];
 
 const loading = ref(false);
 const list = ref<InventoryItem[]>([]);
@@ -81,7 +136,11 @@ function rowClass({ row }: { row: InventoryItem }) {
 async function load() {
   loading.value = true;
   try {
-    const res = await inventoryApi.current({ ...query, keyword: query.keyword || undefined, lowOnly: lowOnly.value });
+    const res = await inventoryApi.current({
+      ...query,
+      keyword: query.keyword || undefined,
+      lowOnly: lowOnly.value,
+    });
     list.value = res.list;
     total.value = res.total;
   } finally {

@@ -4,7 +4,9 @@
       <div class="summary-row">
         <div class="summary-item">
           <div class="s-label">应收合计</div>
-          <div class="s-value num" style="color: var(--el-color-primary)">¥{{ fmtMoney(totalReceivable) }}</div>
+          <div class="s-value num" style="color: var(--el-color-primary)">
+            ¥{{ fmtMoney(totalReceivable) }}
+          </div>
         </div>
         <div class="summary-item">
           <div class="s-label">应付合计</div>
@@ -12,7 +14,9 @@
         </div>
         <div class="summary-item">
           <div class="s-label">往来净额</div>
-          <div class="s-value num" style="color: var(--success-text)">¥{{ fmtMoney(totalReceivable - totalPayable) }}</div>
+          <div class="s-value num" style="color: var(--success-text)">
+            ¥{{ fmtMoney(totalReceivable - totalPayable) }}
+          </div>
         </div>
       </div>
     </div>
@@ -20,33 +24,49 @@
     <div class="page-card">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="应收（客户）" name="receivable">
-          <el-table :data="receivableList" v-loading="loading" :row-class-name="balanceClass">
+          <el-table v-loading="loading" :data="receivableList" :row-class-name="balanceClass">
             <el-table-column prop="partnerName" label="客户" min-width="200" show-overflow-tooltip />
             <el-table-column label="订单总额" width="140" align="right">
-              <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template>
+              <template #default="{ row }"
+                ><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template
+              >
             </el-table-column>
             <el-table-column label="已收款" width="140" align="right">
-              <template #default="{ row }"><span class="num" style="color: var(--success-text)">¥{{ fmtMoney(row.paidAmount) }}</span></template>
+              <template #default="{ row }"
+                ><span class="num" style="color: var(--success-text)"
+                  >¥{{ fmtMoney(row.paidAmount) }}</span
+                ></template
+              >
             </el-table-column>
             <el-table-column label="未收余额" width="150" align="right">
               <template #default="{ row }">
-                <span class="num" :style="row.balance > 0 ? 'color:var(--danger-text);font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
+                <span class="num" :style="row.balance > 0 ? 'color:var(--danger-text);font-weight:700' : ''"
+                  >¥{{ fmtMoney(row.balance) }}</span
+                >
               </template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
         <el-tab-pane label="应付（供应商）" name="payable">
-          <el-table :data="payableList" v-loading="loading" :row-class-name="balanceClass">
+          <el-table v-loading="loading" :data="payableList" :row-class-name="balanceClass">
             <el-table-column prop="partnerName" label="供应商" min-width="200" show-overflow-tooltip />
             <el-table-column label="订单总额" width="140" align="right">
-              <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template>
+              <template #default="{ row }"
+                ><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template
+              >
             </el-table-column>
             <el-table-column label="已付款" width="140" align="right">
-              <template #default="{ row }"><span class="num" style="color: var(--success-text)">¥{{ fmtMoney(row.paidAmount) }}</span></template>
+              <template #default="{ row }"
+                ><span class="num" style="color: var(--success-text)"
+                  >¥{{ fmtMoney(row.paidAmount) }}</span
+                ></template
+              >
             </el-table-column>
             <el-table-column label="未付余额" width="150" align="right">
               <template #default="{ row }">
-                <span class="num" :style="row.balance > 0 ? 'color:var(--warning-text);font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
+                <span class="num" :style="row.balance > 0 ? 'color:var(--warning-text);font-weight:700' : ''"
+                  >¥{{ fmtMoney(row.balance) }}</span
+                >
               </template>
             </el-table-column>
           </el-table>

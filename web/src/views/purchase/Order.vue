@@ -2,64 +2,192 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="单号 / 供应商" clearable style="width: 200px" @keyup.enter="load" @clear="load" />
-        <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px" @change="load">
+        <el-input
+          v-model="query.keyword"
+          placeholder="单号 / 供应商"
+          clearable
+          style="width: 200px"
+          @keyup.enter="load"
+          @clear="load"
+        />
+        <el-select
+          v-model="query.status"
+          placeholder="全部状态"
+          clearable
+          style="width: 130px"
+          @change="load"
+        >
           <el-option v-for="(v, k) in ORDER_STATUS" :key="k" :label="v.text" :value="k" />
         </el-select>
-        <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 250px" />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width: 250px"
+        />
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
         <div class="spacer"></div>
-        <el-button v-permission="'purchase:order:create'" type="primary" :icon="Plus" @click="openCreate">新增采购订单</el-button>
+        <el-button v-permission="'purchase:order:create'" type="primary" :icon="Plus" @click="openCreate"
+          >新增采购订单</el-button
+        >
       </div>
 
-      <el-table :data="list" v-loading="loading">
-        <el-table-column prop="orderNo" label="单号" width="170" />
-        <el-table-column prop="supplierName" label="供应商" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="orderDate" label="订单日期" width="110" />
-        <el-table-column label="金额" width="130" align="right">
-          <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template>
-        </el-table-column>
-        <el-table-column label="已付" width="110" align="right">
-          <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.paidAmount) }}</span></template>
-        </el-table-column>
-        <el-table-column label="状态" width="95" align="center">
-          <template #default="{ row }">
-            <el-tag :type="ORDER_STATUS[row.status]?.type || 'info'" size="small">{{ ORDER_STATUS[row.status]?.text || row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="165" />
-        <el-table-column label="操作" width="250" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openDetail(row.id)">详情</el-button>
-            <el-button v-if="row.status === 'draft'" v-permission="'purchase:order:update'" link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 'draft'" v-permission="'purchase:order:confirm'" link type="success" size="small" @click="confirm(row)">确认</el-button>
-            <el-button v-if="row.status === 'confirmed'" v-permission="'purchase:order:inbound'" link type="warning" size="small" @click="warehouse(row)">入库</el-button>
-            <el-popconfirm v-if="['draft', 'confirmed'].includes(row.status)" title="确定取消该订单？" @confirm="cancel(row)">
-              <template #reference>
-                <el-button v-permission="'purchase:order:cancel'" link type="danger" size="small">取消</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+      <ResponsiveList :items="list" :fields="cardFields" :loading="loading" empty-text="暂无采购订单">
+        <el-table v-loading="loading" :data="list">
+          <el-table-column prop="orderNo" label="单号" width="170" />
+          <el-table-column prop="supplierName" label="供应商" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="orderDate" label="订单日期" width="110" />
+          <el-table-column label="金额" width="130" align="right">
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template
+            >
+          </el-table-column>
+          <el-table-column label="已付" width="110" align="right">
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.paidAmount) }}</span></template
+            >
+          </el-table-column>
+          <el-table-column label="状态" width="95" align="center">
+            <template #default="{ row }">
+              <el-tag :type="ORDER_STATUS[row.status]?.type || 'info'" size="small">{{
+                ORDER_STATUS[row.status]?.text || row.status
+              }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="创建时间" width="165" />
+          <el-table-column label="操作" width="250" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openDetail(row.id)">详情</el-button>
+              <el-button
+                v-if="row.status === 'draft'"
+                v-permission="'purchase:order:update'"
+                link
+                type="primary"
+                size="small"
+                @click="openEdit(row)"
+                >编辑</el-button
+              >
+              <el-button
+                v-if="row.status === 'draft'"
+                v-permission="'purchase:order:confirm'"
+                link
+                type="success"
+                size="small"
+                @click="confirm(row)"
+                >确认</el-button
+              >
+              <el-button
+                v-if="row.status === 'confirmed'"
+                v-permission="'purchase:order:inbound'"
+                link
+                type="warning"
+                size="small"
+                @click="warehouse(row)"
+                >入库</el-button
+              >
+              <el-popconfirm
+                v-if="['draft', 'confirmed'].includes(row.status)"
+                title="确定取消该订单？"
+                @confirm="cancel(row)"
+              >
+                <template #reference>
+                  <el-button v-permission="'purchase:order:cancel'" link type="danger" size="small"
+                    >取消</el-button
+                  >
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <el-pagination class="pager" background layout="total, sizes, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" :page-sizes="[10, 20, 50]" @change="load" />
+        <!-- 窄屏卡片里的操作按钮：与表格共用同一套逻辑与权限判断 -->
+        <template #actions="{ row }">
+          <el-button link type="primary" size="small" @click="openDetail(row.id)">详情</el-button>
+          <el-button
+            v-if="row.status === 'draft'"
+            v-permission="'purchase:order:update'"
+            link
+            type="primary"
+            size="small"
+            @click="openEdit(row)"
+            >编辑</el-button
+          >
+          <el-button
+            v-if="row.status === 'draft'"
+            v-permission="'purchase:order:confirm'"
+            link
+            type="success"
+            size="small"
+            @click="confirm(row)"
+            >确认</el-button
+          >
+          <el-button
+            v-if="row.status === 'confirmed'"
+            v-permission="'purchase:order:inbound'"
+            link
+            type="warning"
+            size="small"
+            @click="warehouse(row)"
+            >入库</el-button
+          >
+          <el-popconfirm
+            v-if="['draft', 'confirmed'].includes(row.status)"
+            title="确定取消该订单？"
+            @confirm="cancel(row)"
+          >
+            <template #reference>
+              <el-button v-permission="'purchase:order:cancel'" link type="danger" size="small"
+                >取消</el-button
+              >
+            </template>
+          </el-popconfirm>
+        </template>
+      </ResponsiveList>
+
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        @change="load"
+      />
     </div>
 
     <!-- 新增/编辑 -->
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑采购订单' : '新增采购订单'" width="860px" :close-on-click-modal="false" destroy-on-close>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑采购订单' : '新增采购订单'"
+      width="860px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <el-row :gutter="12">
           <el-col :span="10">
             <el-form-item label="供应商" prop="supplierId">
               <el-select v-model="form.supplierId" filterable placeholder="选择供应商" style="width: 100%">
-                <el-option v-for="s in suppliers" :key="s.id" :label="`${s.name}（${s.code}）`" :value="s.id" />
+                <el-option
+                  v-for="s in suppliers"
+                  :key="s.id"
+                  :label="`${s.name}（${s.code}）`"
+                  :value="s.id"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="订单日期" prop="orderDate">
-              <el-date-picker v-model="form.orderDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+              <el-date-picker
+                v-model="form.orderDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -75,27 +203,63 @@
       <el-table :data="form.items" size="small" border>
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
-            <el-select v-model="row.productId" filterable placeholder="搜索商品" style="width: 100%" @change="(id: number) => onProductChange(row, id)">
-              <el-option v-for="p in productOptions" :key="p.id" :label="`${p.name}（${p.code}）`" :value="p.id" />
+            <el-select
+              v-model="row.productId"
+              filterable
+              placeholder="搜索商品"
+              style="width: 100%"
+              @change="(id: number) => onProductChange(row, id)"
+            >
+              <el-option
+                v-for="p in productOptions"
+                :key="p.id"
+                :label="`${p.name}（${p.code}）`"
+                :value="p.id"
+              />
             </el-select>
           </template>
         </el-table-column>
         <el-table-column label="数量" width="130">
           <template #default="{ row }">
-            <el-input-number v-model="row.quantity" :min="0.01" :precision="2" size="small" style="width: 100%" @change="recalc" />
+            <el-input-number
+              v-model="row.quantity"
+              :min="0.01"
+              :precision="2"
+              size="small"
+              style="width: 100%"
+              @change="recalc"
+            />
           </template>
         </el-table-column>
         <el-table-column label="单价" width="130">
           <template #default="{ row }">
-            <el-input-number v-model="row.price" :min="0" :precision="2" size="small" style="width: 100%" @change="recalc" />
+            <el-input-number
+              v-model="row.price"
+              :min="0"
+              :precision="2"
+              size="small"
+              style="width: 100%"
+              @change="recalc"
+            />
           </template>
         </el-table-column>
         <el-table-column label="金额" width="120" align="right">
-          <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.amount) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num">¥{{ fmtMoney(row.amount) }}</span></template
+          >
         </el-table-column>
         <el-table-column label="操作" width="60" align="center">
           <template #default="{ $index }">
-            <el-button link type="danger" size="small" @click="form.items.splice($index, 1); recalc()">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              size="small"
+              @click="
+                form.items.splice($index, 1);
+                recalc();
+              "
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -115,7 +279,9 @@
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="单号">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="ORDER_STATUS[detail.status]?.type || 'info'" size="small">{{ ORDER_STATUS[detail.status]?.text || detail.status }}</el-tag>
+            <el-tag :type="ORDER_STATUS[detail.status]?.type || 'info'" size="small">{{
+              ORDER_STATUS[detail.status]?.text || detail.status
+            }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="供应商">{{ detail.supplierName }}</el-descriptions-item>
           <el-descriptions-item label="订单日期">{{ detail.orderDate }}</el-descriptions-item>
@@ -129,14 +295,20 @@
           <el-table-column prop="spec" label="规格" width="100" />
           <el-table-column prop="quantity" label="数量" width="90" align="right" />
           <el-table-column label="单价" width="100" align="right">
-            <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.price) }}</span></template>
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.price) }}</span></template
+            >
           </el-table-column>
           <el-table-column label="金额" width="110" align="right">
-            <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.amount) }}</span></template>
+            <template #default="{ row }"
+              ><span class="num">¥{{ fmtMoney(row.amount) }}</span></template
+            >
           </el-table-column>
         </el-table>
         <div v-if="detail.status === 'confirmed'" class="detail-actions">
-          <el-button v-permission="'purchase:order:inbound'" type="warning" @click="warehouse(detail)">立即入库</el-button>
+          <el-button v-permission="'purchase:order:inbound'" type="warning" @click="warehouse(detail)"
+            >立即入库</el-button
+          >
         </div>
       </template>
     </el-drawer>
@@ -149,7 +321,29 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import { Plus, Search } from '@element-plus/icons-vue';
 import { productApi, purchaseApi, supplierApi } from '@/api';
 import { fmtMoney, ORDER_STATUS, today } from '@/utils';
+import ResponsiveList, { type ListField } from '@/components/ResponsiveList.vue';
 import type { OrderItemLine, PurchaseOrderItem } from '@erp/shared';
+
+/**
+ * 窄屏卡片的字段定义。
+ * 单号是这页的「主键」，放标题；金额/已付/状态一眼要看到；
+ * 创建时间放最后（次要信息）。
+ */
+const cardFields: ListField<PurchaseOrderItem>[] = [
+  { label: '单号', prop: 'orderNo', primary: true },
+  {
+    label: '状态',
+    badge: (r) => {
+      const s = ORDER_STATUS[r.status];
+      return { text: s?.text || String(r.status), type: s?.type };
+    },
+  },
+  { label: '供应商', prop: 'customerName' },
+  { label: '订单日期', prop: 'orderDate' },
+  { label: '金额', format: (r) => `¥${fmtMoney(r.totalAmount)}`, numeric: true },
+  { label: '已付', format: (r) => `¥${fmtMoney(r.paidAmount)}`, numeric: true },
+  { label: '创建时间', prop: 'createdAt' },
+];
 
 const loading = ref(false);
 const list = ref<PurchaseOrderItem[]>([]);
@@ -207,7 +401,13 @@ async function loadOptions() {
 }
 
 function addLine() {
-  form.items.push({ productId: undefined as unknown as number, productName: '', quantity: 1, price: 0, amount: 0 });
+  form.items.push({
+    productId: undefined as unknown as number,
+    productName: '',
+    quantity: 1,
+    price: 0,
+    amount: 0,
+  });
 }
 
 function onProductChange(row: any, id: number) {
@@ -253,7 +453,12 @@ async function save() {
   }
   saving.value = true;
   try {
-    const payload = { supplierId: form.supplierId, orderDate: form.orderDate, remark: form.remark, items: form.items.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.price })) };
+    const payload = {
+      supplierId: form.supplierId,
+      orderDate: form.orderDate,
+      remark: form.remark,
+      items: form.items.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.price })),
+    };
     if (form.id) await purchaseApi.update(form.id, payload);
     else await purchaseApi.create(payload);
     ElMessage.success('保存成功');
@@ -277,7 +482,9 @@ async function cancel(row: PurchaseOrderItem) {
 }
 
 async function warehouse(row: PurchaseOrderItem) {
-  await ElMessageBox.confirm(`确认对订单 ${row.orderNo} 执行入库？入库后库存将增加且订单锁定。`, '采购入库', { type: 'warning' });
+  await ElMessageBox.confirm(`确认对订单 ${row.orderNo} 执行入库？入库后库存将增加且订单锁定。`, '采购入库', {
+    type: 'warning',
+  });
   const res = await purchaseApi.warehouse(row.id);
   ElMessage.success(`入库成功：${res.inboundNo}`);
   detailVisible.value = false;

@@ -48,11 +48,7 @@
           >
             确定
           </el-button>
-          <el-button
-            size="small"
-            :disabled="busyId !== null"
-            @click="cancel(card.pendingId)"
-          >
+          <el-button size="small" :disabled="busyId !== null" @click="cancel(card.pendingId)">
             取消
           </el-button>
         </div>
@@ -67,13 +63,7 @@
             <span class="row-value num">{{ row.value }}</span>
           </div>
         </div>
-        <el-button
-          v-if="card.link"
-          size="small"
-          plain
-          type="primary"
-          @click="$router.push(card.link!.path)"
-        >
+        <el-button v-if="card.link" size="small" plain type="primary" @click="$router.push(card.link!.path)">
           {{ card.link.label }}
         </el-button>
       </template>

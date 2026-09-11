@@ -123,7 +123,12 @@ export const menuRoutes: RouteRecordRaw[] = [
 ];
 
 const routes: RouteRecordRaw[] = [
-  { path: '/login', name: 'login', component: () => import('@/views/login/index.vue'), meta: { title: '登录' } },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/login/index.vue'),
+    meta: { title: '登录' },
+  },
   {
     path: '/',
     component: Layout,

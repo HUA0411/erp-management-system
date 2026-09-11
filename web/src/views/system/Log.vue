@@ -2,11 +2,18 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="用户名 / 模块 / 动作" clearable style="width: 220px" @keyup.enter="load" @clear="load" />
+        <el-input
+          v-model="query.keyword"
+          placeholder="用户名 / 模块 / 动作"
+          clearable
+          style="width: 220px"
+          @keyup.enter="load"
+          @clear="load"
+        />
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
       </div>
 
-      <el-table :data="list" v-loading="loading">
+      <el-table v-loading="loading" :data="list">
         <el-table-column prop="createdAt" label="时间" width="170" />
         <el-table-column prop="username" label="操作人" width="110" />
         <el-table-column prop="module" label="模块" width="120" />
@@ -15,7 +22,16 @@
         <el-table-column prop="path" label="路径" min-width="140" show-overflow-tooltip />
       </el-table>
 
-      <el-pagination class="pager" background layout="total, sizes, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" :page-sizes="[10, 20, 50]" @change="load" />
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        @change="load"
+      />
     </div>
   </div>
 </template>

@@ -34,7 +34,13 @@ export const brand: BrandConfig = {
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h;
   return {
     r: parseInt(full.slice(0, 2), 16),
     g: parseInt(full.slice(2, 4), 16),

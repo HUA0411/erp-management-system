@@ -259,3 +259,55 @@ optgroup {
   opacity: 0;
   transform: translateY(-4px);
 }
+
+/* ==================== 窄屏（手机）==================== */
+
+/**
+ * 分页器在 390px 下会横向溢出。
+ * Element Plus 的分页是一条 nowrap 的 flex，`total, sizes, prev, pager, next`
+ * 全部铺开需要约 520px。这里让它换行，并把「共 N 条」和每页条数压到第二行。
+ */
+@media (max-width: 640px) {
+  .pager,
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  /* 「共 N 条」独占一行，避免和页码挤在一起 */
+  .el-pagination__total {
+    width: 100%;
+    text-align: center;
+    margin-right: 0;
+  }
+
+  /* 每页条数选择器收窄，否则 100px 的下拉在 390px 里很占地方 */
+  .el-pagination .el-select {
+    width: 96px;
+  }
+
+  /* 工具栏里的固定宽度输入框改成整行，不然会挤出卡片 */
+  .toolbar {
+    gap: 8px;
+  }
+
+  .toolbar .el-input,
+  .toolbar .el-select,
+  .toolbar .el-tree-select,
+  .toolbar .el-date-editor {
+    width: 100% !important;
+  }
+
+  .toolbar .spacer {
+    display: none;
+  }
+
+  .toolbar > .el-button {
+    flex: 1;
+  }
+
+  .page-card {
+    padding: 12px;
+  }
+}

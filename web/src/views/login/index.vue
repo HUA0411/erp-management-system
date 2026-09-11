@@ -12,7 +12,12 @@
         </div>
 
         <div class="brand-points">
-          <div class="point" v-for="(p, i) in points" :key="p.title" :style="{ animationDelay: `${150 + i * 120}ms` }">
+          <div
+            v-for="(p, i) in points"
+            :key="p.title"
+            class="point"
+            :style="{ animationDelay: `${150 + i * 120}ms` }"
+          >
             <el-icon><component :is="p.icon" /></el-icon>
             <div>
               <div class="point-title">{{ p.title }}</div>
@@ -36,10 +41,20 @@
 
         <el-form ref="formRef" :model="form" :rules="rules" size="large" @keyup.enter="submit">
           <el-form-item prop="companyCode">
-            <el-input v-model="form.companyCode" placeholder="公司编码（演示：DEMO）" :prefix-icon="OfficeBuilding" clearable />
+            <el-input
+              v-model="form.companyCode"
+              placeholder="公司编码（演示：DEMO）"
+              :prefix-icon="OfficeBuilding"
+              clearable
+            />
           </el-form-item>
           <el-form-item prop="username">
-            <el-input v-model="form.username" placeholder="用户名（演示：admin）" :prefix-icon="User" clearable />
+            <el-input
+              v-model="form.username"
+              placeholder="用户名（演示：admin）"
+              :prefix-icon="User"
+              clearable
+            />
           </el-form-item>
           <el-form-item prop="password">
             <el-input
@@ -168,7 +183,9 @@ async function submit() {
     border: 1px solid rgba(242, 163, 60, 0.16);
     right: -140px;
     top: -120px;
-    box-shadow: 0 0 0 60px rgba(242, 163, 60, 0.05), 0 0 0 120px rgba(242, 163, 60, 0.03);
+    box-shadow:
+      0 0 0 60px rgba(242, 163, 60, 0.05),
+      0 0 0 120px rgba(242, 163, 60, 0.03);
   }
 }
 

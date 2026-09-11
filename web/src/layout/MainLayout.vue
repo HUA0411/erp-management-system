@@ -106,10 +106,12 @@
 
 <script setup lang="ts">
 import { computed, h, onMounted, onUnmounted, reactive, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { ElSubMenu, ElMenuItem, ElIcon } from 'element-plus';
-import * as Icons from '@element-plus/icons-vue';
+// 模板里直接用到的图标（全局注册已移除，必须逐个引入）
+import { ArrowDown, Expand, Fold, Lock, SwitchButton } from '@element-plus/icons-vue';
+import { resolveMenuIcon } from './menu-icons';
 import { useUserStore } from '@/stores/user';
 import { authApi } from '@/api';
 import { brand } from '@/config/brand';
@@ -117,7 +119,6 @@ import AiAssistant from '@/components/ai/AiAssistant.vue';
 import type { MenuNode } from '@erp/shared';
 
 const userStore = useUserStore();
-const route = useRoute();
 const router = useRouter();
 
 /**
@@ -129,7 +130,7 @@ const router = useRouter();
  * 最终态 = 二者取或。
  */
 const NARROW_BREAKPOINT = 1024; // 实测 1024 起内容区就不够用了
-const MOBILE_BREAKPOINT = 630;  // 以下侧边栏改浮层，见样式里的 @media
+const MOBILE_BREAKPOINT = 630; // 以下侧边栏改浮层，见样式里的 @media
 
 const userCollapsed = ref(false);
 const autoCollapsed = ref(false);
@@ -221,9 +222,10 @@ async function submitPwd() {
 // 注意：渲染函数中必须使用组件对象（ElSubMenu/ElMenuItem/ElIcon）而非字符串标签，保证组件被正确解析
 const SideMenuItem = (props: { node: MenuNode }) => {
   const children = props.node.children ?? [];
+  const icon = resolveMenuIcon(props.node.icon);
   const label = () => [
-    props.node.icon && Icons[props.node.icon as keyof typeof Icons]
-      ? h(ElIcon, null, { default: () => h(Icons[props.node.icon as keyof typeof Icons]) })
+    icon
+      ? h(ElIcon, null, { default: () => h(icon) })
       : h(ElIcon, null, { default: () => h('span', { style: 'width: 16px' }) }),
     h('span', props.node.name),
   ];

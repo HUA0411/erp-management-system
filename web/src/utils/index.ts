@@ -19,7 +19,10 @@ export function today(): string {
 }
 
 /** 订单状态文案与标签类型 */
-export const ORDER_STATUS: Record<string, { text: string; type: 'info' | 'primary' | 'success' | 'warning' | 'danger' }> = {
+export const ORDER_STATUS: Record<
+  string,
+  { text: string; type: 'info' | 'primary' | 'success' | 'warning' | 'danger' }
+> = {
   draft: { text: '草稿', type: 'info' },
   confirmed: { text: '已确认', type: 'primary' },
   warehoused: { text: '已入库', type: 'success' },
@@ -27,7 +30,10 @@ export const ORDER_STATUS: Record<string, { text: string; type: 'info' | 'primar
   cancelled: { text: '已取消', type: 'danger' },
 };
 
-export const INVENTORY_TYPE: Record<string, { text: string; type: 'success' | 'danger' | 'warning' | 'info' }> = {
+export const INVENTORY_TYPE: Record<
+  string,
+  { text: string; type: 'success' | 'danger' | 'warning' | 'info' }
+> = {
   init: { text: '期初', type: 'info' },
   in: { text: '入库', type: 'success' },
   out: { text: '出库', type: 'danger' },

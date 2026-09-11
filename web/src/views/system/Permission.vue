@@ -5,11 +5,11 @@
         <span class="tip">菜单与按钮权限为系统全局模板，公司间共用；编辑仅影响显示名称、图标与排序。</span>
       </div>
       <el-table
+        v-loading="loading"
         :data="tree"
         row-key="id"
         :tree-props="{ children: 'children' }"
         default-expand-all
-        v-loading="loading"
       >
         <el-table-column label="名称" min-width="200">
           <template #default="{ row }">
@@ -20,7 +20,9 @@
         <el-table-column prop="code" label="权限码" min-width="200" />
         <el-table-column label="类型" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.type === 'menu' ? 'primary' : 'info'" size="small" effect="plain">{{ row.type === 'menu' ? '菜单' : '按钮' }}</el-tag>
+            <el-tag :type="row.type === 'menu' ? 'primary' : 'info'" size="small" effect="plain">{{
+              row.type === 'menu' ? '菜单' : '按钮'
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="path" label="路由" min-width="140">
@@ -39,7 +41,15 @@
               <el-button link type="primary" size="small" @click="saveEdit">保存</el-button>
               <el-button link size="small" @click="editingId = null">取消</el-button>
             </template>
-            <el-button v-else v-permission="'system:permission:update'" link type="primary" size="small" @click="startEdit(row)">编辑</el-button>
+            <el-button
+              v-else
+              v-permission="'system:permission:update'"
+              link
+              type="primary"
+              size="small"
+              @click="startEdit(row)"
+              >编辑</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -73,7 +83,12 @@ function startEdit(row: PermissionNode) {
 }
 
 async function saveEdit() {
-  await permissionApi.update(editingId.value!, { name: editForm.name, icon: editForm.icon || undefined, sort: editForm.sort, path: editForm.path || undefined });
+  await permissionApi.update(editingId.value!, {
+    name: editForm.name,
+    icon: editForm.icon || undefined,
+    sort: editForm.sort,
+    path: editForm.path || undefined,
+  });
   ElMessage.success('已保存');
   editingId.value = null;
   load();

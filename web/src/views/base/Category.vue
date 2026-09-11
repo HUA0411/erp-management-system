@@ -2,7 +2,9 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-button v-permission="'product:create'" type="primary" :icon="Plus" @click="openCreate()">新增分类</el-button>
+        <el-button v-permission="'product:create'" type="primary" :icon="Plus" @click="openCreate()"
+          >新增分类</el-button
+        >
       </div>
       <el-table :data="tree" row-key="id" :tree-props="{ children: 'children' }" default-expand-all>
         <el-table-column prop="name" label="分类名称" min-width="200" />
@@ -19,8 +21,17 @@
         </el-table-column>
         <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'product:create'" link type="primary" size="small" @click="openCreate(row.id)">加子分类</el-button>
-            <el-button v-permission="'product:update'" link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button
+              v-permission="'product:create'"
+              link
+              type="primary"
+              size="small"
+              @click="openCreate(row.id)"
+              >加子分类</el-button
+            >
+            <el-button v-permission="'product:update'" link type="primary" size="small" @click="openEdit(row)"
+              >编辑</el-button
+            >
             <el-popconfirm title="确认删除该分类？" @confirm="remove(row)">
               <template #reference>
                 <el-button v-permission="'product:delete'" link type="danger" size="small">删除</el-button>

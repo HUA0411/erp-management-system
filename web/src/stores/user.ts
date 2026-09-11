@@ -12,7 +12,8 @@ export const useUserStore = defineStore('user', {
     permissions: (s): string[] => s.user?.permissions ?? [],
     menus: (s): MenuNode[] => s.user?.menus ?? [],
     isSuperAdmin: (s) => !!s.user?.isSuperAdmin,
-    hasPermission: (s) => (code: string) => !!s.user?.isSuperAdmin || (s.user?.permissions ?? []).includes(code),
+    hasPermission: (s) => (code: string) =>
+      !!s.user?.isSuperAdmin || (s.user?.permissions ?? []).includes(code),
   },
   actions: {
     async login(payload: LoginPayload) {

@@ -2,13 +2,22 @@
   <div class="page">
     <div class="page-card">
       <div class="toolbar">
-        <el-input v-model="query.keyword" placeholder="角色名称 / 编码" clearable style="width: 220px" @keyup.enter="load" @clear="load" />
+        <el-input
+          v-model="query.keyword"
+          placeholder="角色名称 / 编码"
+          clearable
+          style="width: 220px"
+          @keyup.enter="load"
+          @clear="load"
+        />
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
         <div class="spacer"></div>
-        <el-button v-permission="'system:role:create'" type="primary" :icon="Plus" @click="openCreate">新增角色</el-button>
+        <el-button v-permission="'system:role:create'" type="primary" :icon="Plus" @click="openCreate"
+          >新增角色</el-button
+        >
       </div>
 
-      <el-table :data="list" v-loading="loading">
+      <el-table v-loading="loading" :data="list">
         <el-table-column prop="name" label="角色名称" width="160" />
         <el-table-column prop="code" label="编码" width="160" />
         <el-table-column prop="remark" label="说明" min-width="200" show-overflow-tooltip />
@@ -17,29 +26,59 @@
         </el-table-column>
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{
+              row.status === 1 ? '启用' : '停用'
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="210" align="center">
           <template #default="{ row }">
-            <el-button v-permission="'system:role:update'" link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm v-if="row.code !== 'SUPER_ADMIN'" title="删除该角色？（需先解绑用户）" @confirm="remove(row)">
+            <el-button
+              v-permission="'system:role:update'"
+              link
+              type="primary"
+              size="small"
+              @click="openEdit(row)"
+              >编辑</el-button
+            >
+            <el-popconfirm
+              v-if="row.code !== 'SUPER_ADMIN'"
+              title="删除该角色？（需先解绑用户）"
+              @confirm="remove(row)"
+            >
               <template #reference>
-                <el-button v-permission="'system:role:delete'" link type="danger" size="small">删除</el-button>
+                <el-button v-permission="'system:role:delete'" link type="danger" size="small"
+                  >删除</el-button
+                >
               </template>
             </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-pagination class="pager" background layout="total, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" @change="load" />
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, prev, pager, next"
+        :total="total"
+        @change="load"
+      />
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑角色' : '新增角色'" width="560px" :close-on-click-modal="false">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑角色' : '新增角色'"
+      width="560px"
+      :close-on-click-modal="false"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-row :gutter="12">
           <el-col :span="12">
-            <el-form-item label="名称" prop="name"><el-input v-model="form.name" placeholder="如 采购主管" /></el-form-item>
+            <el-form-item label="名称" prop="name"
+              ><el-input v-model="form.name" placeholder="如 采购主管"
+            /></el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="编码" prop="code">
@@ -112,7 +151,13 @@ async function openCreate() {
 }
 
 async function openEdit(row: any) {
-  Object.assign(form, { id: row.id, name: row.name, code: row.code, remark: row.remark, permissionIds: row.permissionIds || [] });
+  Object.assign(form, {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    remark: row.remark,
+    permissionIds: row.permissionIds || [],
+  });
   dialogVisible.value = true;
   await nextTick();
   permTreeRef.value?.setCheckedKeys(row.permissionIds || []);

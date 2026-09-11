@@ -45,7 +45,8 @@ export const authApi = {
 export const dashboardApi = {
   summary: () => http.get<never, DashboardSummary>('/dashboard/summary'),
   saleTrend: (days = 30) => http.get<never, TrendPoint[]>('/dashboard/sale-trend', { params: { days } }),
-  topProducts: (limit = 10) => http.get<never, TopProduct[]>('/dashboard/top-products', { params: { limit } }),
+  topProducts: (limit = 10) =>
+    http.get<never, TopProduct[]>('/dashboard/top-products', { params: { limit } }),
   recentOrders: () => http.get<never, RecentOrder[]>('/dashboard/recent-orders'),
 };
 
@@ -74,16 +75,20 @@ export const productApi = {
 };
 
 export const supplierApi = {
-  list: (params: Record<string, unknown>) => http.get<never, PageResult<SupplierItem>>('/suppliers', { params }),
-  options: (keyword?: string) => http.get<never, SupplierItem[]>('/suppliers/options', { params: { keyword } }),
+  list: (params: Record<string, unknown>) =>
+    http.get<never, PageResult<SupplierItem>>('/suppliers', { params }),
+  options: (keyword?: string) =>
+    http.get<never, SupplierItem[]>('/suppliers/options', { params: { keyword } }),
   create: (data: Record<string, unknown>) => http.post('/suppliers', data),
   update: (id: number, data: Record<string, unknown>) => http.put(`/suppliers/${id}`, data),
   remove: (id: number) => http.delete(`/suppliers/${id}`),
 };
 
 export const customerApi = {
-  list: (params: Record<string, unknown>) => http.get<never, PageResult<CustomerItem>>('/customers', { params }),
-  options: (keyword?: string) => http.get<never, CustomerItem[]>('/customers/options', { params: { keyword } }),
+  list: (params: Record<string, unknown>) =>
+    http.get<never, PageResult<CustomerItem>>('/customers', { params }),
+  options: (keyword?: string) =>
+    http.get<never, CustomerItem[]>('/customers/options', { params: { keyword } }),
   create: (data: Record<string, unknown>) => http.post('/customers', data),
   update: (id: number, data: Record<string, unknown>) => http.put(`/customers/${id}`, data),
   remove: (id: number) => http.delete(`/customers/${id}`),
@@ -108,7 +113,8 @@ export const purchaseApi = {
 
 // ============ 销售 ============
 export const saleApi = {
-  list: (params: Record<string, unknown>) => http.get<never, PageResult<SaleOrderItem>>('/sale-orders', { params }),
+  list: (params: Record<string, unknown>) =>
+    http.get<never, PageResult<SaleOrderItem>>('/sale-orders', { params }),
   detail: (id: number) => http.get<never, SaleOrderItem>(`/sale-orders/${id}`),
   create: (data: { customerId: number; orderDate: string; remark?: string; items: OrderItemLine[] }) =>
     http.post<never, SaleOrderItem>('/sale-orders', data),
@@ -202,23 +208,19 @@ export const agentApi = {
     http.post<never, { ok: boolean; message: string }>('/ai-agent/config/test', data, {
       timeout: 30000,
     }),
-  saveConfig: (data: AiConfigPayload) =>
-    http.put<never, AiConfigView>('/ai-agent/config', data),
+  saveConfig: (data: AiConfigPayload) => http.put<never, AiConfigView>('/ai-agent/config', data),
   chat: (data: { message: string; conversationId?: number; reasoningEffort?: string }) =>
     http.post<never, AiChatResult>('/ai-agent/chat', data, { timeout: 60000 }),
   pending: () => http.get<never, AiPendingAction[]>('/ai-agent/pending'),
-  confirm: (id: number) =>
-    http.post<never, AiConfirmResult>(`/ai-agent/pending/${id}/confirm`),
-  cancel: (id: number) =>
-    http.post<never, { ok: boolean }>(`/ai-agent/pending/${id}/cancel`),
+  confirm: (id: number) => http.post<never, AiConfirmResult>(`/ai-agent/pending/${id}/confirm`),
+  cancel: (id: number) => http.post<never, { ok: boolean }>(`/ai-agent/pending/${id}/cancel`),
   conversations: () => http.get<never, AiConversationBrief[]>('/ai-agent/conversations'),
   conversationMessages: (id: number) =>
     http.get<never, Array<{ role: 'user' | 'assistant'; content: string; cards: AiCard[] }>>(
       `/ai-agent/conversations/${id}/messages`,
     ),
   latestReport: () => http.get<never, AiReport | null>('/ai-agent/report/low-stock/latest'),
-  refreshReport: () =>
-    http.post<never, AiReport | null>('/ai-agent/report/low-stock/refresh'),
+  refreshReport: () => http.post<never, AiReport | null>('/ai-agent/report/low-stock/refresh'),
 };
 
 export type { AiCard };

@@ -36,18 +36,14 @@
                       <div class="history-time">{{ c.updatedAt }}</div>
                     </div>
                   </el-dropdown-item>
-                  <el-dropdown-item v-if="!conversations.length" disabled>
-                    暂无历史对话
-                  </el-dropdown-item>
+                  <el-dropdown-item v-if="!conversations.length" disabled> 暂无历史对话 </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
             <el-button v-if="config?.configured" link type="primary" size="small" @click="newConversation">
               新对话
             </el-button>
-            <el-button v-if="config?.canConfigure" link size="small" @click="openConfig">
-              配置
-            </el-button>
+            <el-button v-if="config?.canConfigure" link size="small" @click="openConfig"> 配置 </el-button>
           </div>
         </div>
 
@@ -65,12 +61,7 @@
                 style="width: 100%"
                 @change="onProviderChange"
               >
-                <el-option
-                  v-for="p in aiProviderPresets"
-                  :key="p.id"
-                  :label="p.name"
-                  :value="p.id"
-                />
+                <el-option v-for="p in aiProviderPresets" :key="p.id" :label="p.name" :value="p.id" />
               </el-select>
             </el-form-item>
             <el-form-item label="API Key" :required="!config?.configured">
@@ -98,7 +89,8 @@
                   href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing"
                   target="_blank"
                   rel="noopener noreferrer"
-                >去获取模型</a>
+                  >去获取模型</a
+                >
               </div>
             </el-form-item>
             <div v-if="currentPreset?.hint" class="config-hint">{{ currentPreset.hint }}</div>
@@ -114,13 +106,15 @@
 
         <!-- 未配置且无权限 -->
         <div v-else-if="!config?.configured" class="ai-body ai-empty">
-          <div class="empty-icon"><el-icon :size="28"><ChatDotRound /></el-icon></div>
-          <div class="empty-text">
-            {{ config?.canConfigure ? '请先配置模型服务后开始使用' : 'AI 服务尚未配置，请联系管理员完成配置' }}
+          <div class="empty-icon">
+            <el-icon :size="28"><ChatDotRound /></el-icon>
           </div>
-          <el-button v-if="config?.canConfigure" type="primary" @click="openConfig">
-            去配置
-          </el-button>
+          <div class="empty-text">
+            {{
+              config?.canConfigure ? '请先配置模型服务后开始使用' : 'AI 服务尚未配置，请联系管理员完成配置'
+            }}
+          </div>
+          <el-button v-if="config?.canConfigure" type="primary" @click="openConfig"> 去配置 </el-button>
         </div>
 
         <!-- 对话区 -->
@@ -222,6 +216,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+// 全局图标注册已移除，模板里用到的图标必须显式引入
+import { ChatDotRound } from '@element-plus/icons-vue';
 import { agentApi } from '@/api';
 import AiCards from './AiCards.vue';
 import type { ComponentPublicInstance } from 'vue';
@@ -256,7 +252,9 @@ const configForm = ref({
 });
 
 const currentPreset = computed(
-  () => aiProviderPresets.find((p) => p.id === configForm.value.provider) ?? aiProviderPresets[aiProviderPresets.length - 1],
+  () =>
+    aiProviderPresets.find((p) => p.id === configForm.value.provider) ??
+    aiProviderPresets[aiProviderPresets.length - 1],
 );
 
 const messages = ref<ChatMsg[]>([]);
@@ -547,9 +545,7 @@ async function send() {
 function resolvePendingCard(pendingId: number, newCard: AiCard | null): boolean {
   for (const msg of messages.value) {
     if (msg.cards?.length) {
-      const idx = msg.cards.findIndex(
-        (c) => c.type === 'confirmation' && c.pendingId === pendingId,
-      );
+      const idx = msg.cards.findIndex((c) => c.type === 'confirmation' && c.pendingId === pendingId);
       if (idx >= 0) {
         if (newCard) msg.cards[idx] = newCard;
         else msg.cards.splice(idx, 1);
@@ -565,10 +561,7 @@ async function confirmAction(pendingId: number, idx: number) {
   try {
     const res = await agentApi.confirm(pendingId);
     const result = (res.result ?? {}) as { orderNo?: string };
-    const rows = [
-      ...res.preview.rows,
-      { label: '状态', value: res.message },
-    ];
+    const rows = [...res.preview.rows, { label: '状态', value: res.message }];
     const card: AiCard = {
       type: 'result',
       ok: true,

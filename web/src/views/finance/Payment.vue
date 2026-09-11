@@ -7,23 +7,43 @@
           <el-radio-button value="receive">收款</el-radio-button>
           <el-radio-button value="pay">付款</el-radio-button>
         </el-radio-group>
-        <el-input v-model="query.keyword" placeholder="单号 / 往来单位" clearable style="width: 200px" @keyup.enter="load" @clear="load" />
-        <el-date-picker v-model="dateRange" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" style="width: 250px" />
+        <el-input
+          v-model="query.keyword"
+          placeholder="单号 / 往来单位"
+          clearable
+          style="width: 200px"
+          @keyup.enter="load"
+          @clear="load"
+        />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width: 250px"
+        />
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
         <div class="spacer"></div>
-        <el-button v-permission="'finance:payment:create'" type="primary" :icon="Plus" @click="openCreate">登记收付款</el-button>
+        <el-button v-permission="'finance:payment:create'" type="primary" :icon="Plus" @click="openCreate"
+          >登记收付款</el-button
+        >
       </div>
 
-      <el-table :data="list" v-loading="loading">
+      <el-table v-loading="loading" :data="list">
         <el-table-column prop="docNo" label="单号" width="170" />
         <el-table-column label="类型" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="PAYMENT_TYPE[row.type]?.type" size="small">{{ PAYMENT_TYPE[row.type]?.text }}</el-tag>
+            <el-tag :type="PAYMENT_TYPE[row.type]?.type" size="small">{{
+              PAYMENT_TYPE[row.type]?.text
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="partnerName" label="往来单位" min-width="180" show-overflow-tooltip />
         <el-table-column label="金额" width="130" align="right">
-          <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.amount) }}</span></template>
+          <template #default="{ row }"
+            ><span class="num">¥{{ fmtMoney(row.amount) }}</span></template
+          >
         </el-table-column>
         <el-table-column prop="orderNo" label="关联订单" width="170" />
         <el-table-column prop="payDate" label="日期" width="110" />
@@ -33,14 +53,25 @@
           <template #default="{ row }">
             <el-popconfirm title="确定删除该单据？" @confirm="remove(row)">
               <template #reference>
-                <el-button v-permission="'finance:payment:delete'" link type="danger" size="small">删除</el-button>
+                <el-button v-permission="'finance:payment:delete'" link type="danger" size="small"
+                  >删除</el-button
+                >
               </template>
             </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-pagination class="pager" background layout="total, sizes, prev, pager, next" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" :page-sizes="[10, 20, 50]" @change="load" />
+      <el-pagination
+        v-model:current-page="query.page"
+        v-model:page-size="query.pageSize"
+        class="pager"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        @change="load"
+      />
     </div>
 
     <el-dialog v-model="dialogVisible" title="登记收付款" width="520px" :close-on-click-modal="false">
@@ -67,7 +98,12 @@
           </el-col>
           <el-col :span="10">
             <el-form-item label="日期" prop="payDate">
-              <el-date-picker v-model="form.payDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+              <el-date-picker
+                v-model="form.payDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -140,7 +176,15 @@ async function openCreate() {
   const [s, c] = await Promise.all([supplierApi.options(), customerApi.options()]);
   suppliers.value = s;
   customers.value = c;
-  Object.assign(form, { type: 'receive', partnerId: undefined, amount: undefined, orderNo: '', payDate: today(), method: '银行转账', remark: '' });
+  Object.assign(form, {
+    type: 'receive',
+    partnerId: undefined,
+    amount: undefined,
+    orderNo: '',
+    payDate: today(),
+    method: '银行转账',
+    remark: '',
+  });
   dialogVisible.value = true;
 }
 

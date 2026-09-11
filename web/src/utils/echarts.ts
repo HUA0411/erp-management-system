@@ -1,11 +1,6 @@
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart, PieChart } from 'echarts/charts';
-import {
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-  TitleComponent,
-} from 'echarts/components';
+import { GridComponent, LegendComponent, TooltipComponent, TitleComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsCoreOption } from 'echarts/core';
 
@@ -41,9 +36,7 @@ export const fontsReady: Promise<void> =
  */
 function resolveAppFont(): string {
   if (typeof window === 'undefined') return 'sans-serif';
-  const fromVar = getComputedStyle(document.documentElement)
-    .getPropertyValue('--app-font')
-    .trim();
+  const fromVar = getComputedStyle(document.documentElement).getPropertyValue('--app-font').trim();
   const bodyFont = getComputedStyle(document.body).fontFamily;
   return fromVar || bodyFont || 'sans-serif';
 }
