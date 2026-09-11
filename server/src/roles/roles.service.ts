@@ -101,11 +101,14 @@ export class RolesService {
     if (role.code === 'SUPER_ADMIN' && data.status === 0) {
       throw new BusinessException('不能停用超级管理员角色', 40006);
     }
-    await this.roleRepo.update({ id }, {
-      name: data.name ?? role.name,
-      remark: data.remark ?? role.remark,
-      status: data.status ?? role.status,
-    });
+    await this.roleRepo.update(
+      { id },
+      {
+        name: data.name ?? role.name,
+        remark: data.remark ?? role.remark,
+        status: data.status ?? role.status,
+      },
+    );
     if (data.permissionIds) {
       await this.permissionService.setRolePermissions(id, data.permissionIds);
     }

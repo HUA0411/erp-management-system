@@ -31,11 +31,6 @@ export class AuthController {
 
   @Put('password')
   changePassword(@CurrentUser() user: TenantContextData, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(
-      user.userId!,
-      user.companyId,
-      dto.oldPassword,
-      dto.newPassword,
-    );
+    return this.authService.changePassword(user.userId!, user.companyId, dto.oldPassword, dto.newPassword);
   }
 }

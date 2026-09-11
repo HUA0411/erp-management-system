@@ -54,16 +54,21 @@ export class CategoriesService {
 
   async update(id: number, data: { name?: string; sort?: number; status?: number }): Promise<void> {
     const entity = await this.mustFind(id);
-    await this.categoryRepo.update({ id }, {
-      name: data.name ?? entity.name,
-      sort: data.sort ?? entity.sort,
-      status: data.status ?? entity.status,
-    });
+    await this.categoryRepo.update(
+      { id },
+      {
+        name: data.name ?? entity.name,
+        sort: data.sort ?? entity.sort,
+        status: data.status ?? entity.status,
+      },
+    );
   }
 
   async remove(id: number): Promise<void> {
     await this.mustFind(id);
-    const child = await this.categoryRepo.count({ where: { companyId: TenantContext.companyId, parentId: id } });
+    const child = await this.categoryRepo.count({
+      where: { companyId: TenantContext.companyId, parentId: id },
+    });
     if (child > 0) throw new BusinessException('存在子分类，无法删除', 40010);
     const used = await this.productRepo.count({
       where: { companyId: TenantContext.companyId, categoryId: id, status: 1 },

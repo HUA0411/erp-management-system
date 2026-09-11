@@ -11,7 +11,7 @@ import { ProductEntity } from '../../entities/product.entity';
 import { SupplierEntity } from '../../entities/partner.entity';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { round2, todayLocal } from '../../common/utils/no-generator';
-import type { AgentTool, PreviewCard, ToolContext } from '../agent-tool';
+import type { AgentTool, PreviewCard } from '../agent-tool';
 
 /**
  * 库存域工具包：一个业务模块 = 一个工具包文件 + 注册，即"万物皆可插件"。
@@ -104,8 +104,7 @@ export class InventoryAgentTools implements OnModuleInit {
         const page = await this.inventoryService.current({
           page: pageNum,
           pageSize,
-          keyword:
-            typeof args.keyword === 'string' && args.keyword ? args.keyword : undefined,
+          keyword: typeof args.keyword === 'string' && args.keyword ? args.keyword : undefined,
           lowOnly: args.lowOnly === true,
         });
         return { type: 'data', data: { count: page.total, items: page.list } };
@@ -117,8 +116,7 @@ export class InventoryAgentTools implements OnModuleInit {
   private queryProductStock(): AgentTool {
     return {
       name: 'query_product_stock',
-      description:
-        '查询单个商品的最新实时库存。可按商品ID或商品名称查询。返回当前库存、安全库存、是否缺货。',
+      description: '查询单个商品的最新实时库存。可按商品ID或商品名称查询。返回当前库存、安全库存、是否缺货。',
       schema: {
         type: 'object',
         properties: {
@@ -170,10 +168,7 @@ export class InventoryAgentTools implements OnModuleInit {
         const page = await this.inventoryService.records({
           page: pageNum,
           pageSize,
-          keyword:
-            typeof args.productName === 'string' && args.productName
-              ? args.productName
-              : undefined,
+          keyword: typeof args.productName === 'string' && args.productName ? args.productName : undefined,
         });
         return { type: 'data', data: { count: page.total, items: page.list } };
       },
@@ -470,8 +465,7 @@ export class InventoryAgentTools implements OnModuleInit {
           if (!Number.isFinite(quantity) || quantity <= 0) {
             throw new BusinessException('采购数量必须大于 0');
           }
-          const price =
-            row.price == null || row.price === '' ? undefined : Number(row.price);
+          const price = row.price == null || row.price === '' ? undefined : Number(row.price);
           return { productId, quantity, price };
         });
 
@@ -500,8 +494,7 @@ export class InventoryAgentTools implements OnModuleInit {
         const params = {
           supplierId: supplier.id,
           orderDate: todayLocal(),
-          remark:
-            typeof args.remark === 'string' && args.remark ? args.remark : undefined,
+          remark: typeof args.remark === 'string' && args.remark ? args.remark : undefined,
           items: lines.map((l) => ({
             productId: l.productId,
             quantity: l.quantity,
@@ -586,8 +579,7 @@ export class InventoryAgentTools implements OnModuleInit {
   private cancelPurchaseOrder(): AgentTool {
     return {
       name: 'cancel_purchase_order',
-      description:
-        '取消采购订单。仅草稿或已确认状态的订单可取消。生成操作提案，必须用户确认后执行。',
+      description: '取消采购订单。仅草稿或已确认状态的订单可取消。生成操作提案，必须用户确认后执行。',
       schema: {
         type: 'object',
         properties: { orderId: { type: 'number', description: '采购订单ID' } },
@@ -651,13 +643,19 @@ export class InventoryAgentTools implements OnModuleInit {
               { label: '单号', value: order.orderNo },
               { label: '供应商', value: order.supplierName },
               { label: '金额', value: `¥${order.totalAmount.toFixed(2)}` },
-              { label: '明细', value: (order.items ?? []).map((i) => `${i.productName}×${i.quantity}`).join('、') },
+              {
+                label: '明细',
+                value: (order.items ?? []).map((i) => `${i.productName}×${i.quantity}`).join('、'),
+              },
             ],
           };
           return { type: 'propose', params: { orderId }, preview };
         }
         const result = await this.purchaseOrdersService.warehouse(orderId);
-        return { type: 'data', data: { ok: true, orderId, orderNo: order.orderNo, ...result, status: 'warehoused' } };
+        return {
+          type: 'data',
+          data: { ok: true, orderId, orderNo: order.orderNo, ...result, status: 'warehoused' },
+        };
       },
     };
   }
@@ -776,16 +774,17 @@ export class InventoryAgentTools implements OnModuleInit {
             title: '确认盘点单',
             rows: [
               { label: '单号', value: stocktake.stocktakeNo },
-              ...(diffRows.length
-                ? diffRows
-                : [{ label: '差异', value: '无差异，确认后不改动库存' }]),
+              ...(diffRows.length ? diffRows : [{ label: '差异', value: '无差异，确认后不改动库存' }]),
               { label: '操作', value: '确认后按差异调整库存' },
             ],
           };
           return { type: 'propose', params: { stocktakeId }, preview };
         }
         await this.stocktakesService.confirm(stocktakeId);
-        return { type: 'data', data: { ok: true, stocktakeId, stocktakeNo: stocktake.stocktakeNo, status: 'confirmed' } };
+        return {
+          type: 'data',
+          data: { ok: true, stocktakeId, stocktakeNo: stocktake.stocktakeNo, status: 'confirmed' },
+        };
       },
     };
   }

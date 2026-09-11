@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Body } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { PaginationDto } from '../common/dto/pagination.dto';

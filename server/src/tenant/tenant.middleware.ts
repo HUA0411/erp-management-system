@@ -100,16 +100,14 @@ export class TenantMiddleware implements NestMiddleware {
     return tokenPwdAt === snap.pwdAt;
   }
 
-  private async loadSession(
-    key: string,
-    companyId: number,
-    userId: number,
-  ): Promise<SessionSnapshot | null> {
+  private async loadSession(key: string, companyId: number, userId: number): Promise<SessionSnapshot | null> {
     try {
-      const rows = await this.dataSource.query<Array<{ pwd_changed_at: Date | string | null; status: number }>>(
-        'SELECT pwd_changed_at, status FROM sys_user WHERE id = ? AND company_id = ? LIMIT 1',
-        [userId, companyId],
-      );
+      const rows = await this.dataSource.query<
+        Array<{ pwd_changed_at: Date | string | null; status: number }>
+      >('SELECT pwd_changed_at, status FROM sys_user WHERE id = ? AND company_id = ? LIMIT 1', [
+        userId,
+        companyId,
+      ]);
       const row = rows[0];
       if (!row) return null;
       const snap: SessionSnapshot = {

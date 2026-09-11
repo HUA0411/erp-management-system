@@ -117,13 +117,7 @@ export class PendingActionsService {
         throw new BusinessException('该提案已处理，请重新发起', 40034);
       }
 
-      const result = await this.registry.execute(
-        pending.toolName,
-        ctx,
-        params,
-        'execute',
-        permissionCodes,
-      );
+      const result = await this.registry.execute(pending.toolName, ctx, params, 'execute', permissionCodes);
 
       if (result.type === 'error') {
         await manager.query(
@@ -161,10 +155,7 @@ export class PendingActionsService {
     return { ok: true };
   }
 
-  private async mustFindOwn(
-    id: number,
-    user: TenantContextData,
-  ): Promise<AiPendingActionEntity> {
+  private async mustFindOwn(id: number, user: TenantContextData): Promise<AiPendingActionEntity> {
     const row = await this.pendingRepo.findOne({
       where: { id, companyId: user.companyId, userId: user.userId ?? -1 },
     });

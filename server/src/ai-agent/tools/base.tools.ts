@@ -117,7 +117,12 @@ export class BaseAgentTools implements OnModuleInit {
         if (!code || !name) throw new BusinessException('商品编码与名称为必填');
         const purchasePrice = Number(args.purchasePrice);
         const salePrice = Number(args.salePrice);
-        if (!Number.isFinite(purchasePrice) || purchasePrice < 0 || !Number.isFinite(salePrice) || salePrice < 0) {
+        if (
+          !Number.isFinite(purchasePrice) ||
+          purchasePrice < 0 ||
+          !Number.isFinite(salePrice) ||
+          salePrice < 0
+        ) {
           throw new BusinessException('采购价/销售价必须为不小于 0 的数字');
         }
         const supplierId = args.supplierId == null ? undefined : Number(args.supplierId);
@@ -176,7 +181,10 @@ export class BaseAgentTools implements OnModuleInit {
           purchasePrice: { type: 'number', description: '采购价，可选' },
           salePrice: { type: 'number', description: '销售价，可选' },
           safetyStock: { type: 'number', description: '安全库存，可选' },
-          supplierId: { type: 'number', description: '默认供应商ID，可选（先查 query_suppliers；传 0 解除绑定）' },
+          supplierId: {
+            type: 'number',
+            description: '默认供应商ID，可选（先查 query_suppliers；传 0 解除绑定）',
+          },
           status: { type: 'number', description: '状态：1启用/0停用，可选' },
           remark: { type: 'string', description: '备注，可选' },
         },
@@ -188,28 +196,42 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const productId = Number(args.productId);
         if (!Number.isFinite(productId) || productId <= 0) throw new BusinessException('商品ID无效');
-        const product = await this.productRepo.findOne({ where: { id: productId, companyId: ctx.companyId } });
+        const product = await this.productRepo.findOne({
+          where: { id: productId, companyId: ctx.companyId },
+        });
         if (!product) throw new BusinessException('商品不存在', 40403);
 
         const fields: Array<{ label: string; value: string }> = [];
         const params: Record<string, unknown> = {};
-        if (args.name != null) { params.name = String(args.name); fields.push({ label: '名称', value: String(args.name) }); }
-        if (args.spec != null) { params.spec = String(args.spec); fields.push({ label: '规格', value: String(args.spec) }); }
-        if (args.unit != null) { params.unit = String(args.unit); fields.push({ label: '单位', value: String(args.unit) }); }
+        if (args.name != null) {
+          params.name = String(args.name);
+          fields.push({ label: '名称', value: String(args.name) });
+        }
+        if (args.spec != null) {
+          params.spec = String(args.spec);
+          fields.push({ label: '规格', value: String(args.spec) });
+        }
+        if (args.unit != null) {
+          params.unit = String(args.unit);
+          fields.push({ label: '单位', value: String(args.unit) });
+        }
         if (args.purchasePrice != null) {
           const v = Number(args.purchasePrice);
           if (!Number.isFinite(v) || v < 0) throw new BusinessException('采购价无效');
-          params.purchasePrice = v; fields.push({ label: '采购价', value: `¥${v.toFixed(2)}` });
+          params.purchasePrice = v;
+          fields.push({ label: '采购价', value: `¥${v.toFixed(2)}` });
         }
         if (args.salePrice != null) {
           const v = Number(args.salePrice);
           if (!Number.isFinite(v) || v < 0) throw new BusinessException('销售价无效');
-          params.salePrice = v; fields.push({ label: '销售价', value: `¥${v.toFixed(2)}` });
+          params.salePrice = v;
+          fields.push({ label: '销售价', value: `¥${v.toFixed(2)}` });
         }
         if (args.safetyStock != null) {
           const v = Number(args.safetyStock);
           if (!Number.isFinite(v) || v < 0) throw new BusinessException('安全库存无效');
-          params.safetyStock = v; fields.push({ label: '安全库存', value: String(v) });
+          params.safetyStock = v;
+          fields.push({ label: '安全库存', value: String(v) });
         }
         if ('supplierId' in args) {
           const v = Number(args.supplierId);
@@ -227,9 +249,13 @@ export class BaseAgentTools implements OnModuleInit {
         if (args.status != null) {
           const v = Number(args.status);
           if (v !== 0 && v !== 1) throw new BusinessException('状态仅可为 0 或 1');
-          params.status = v; fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
+          params.status = v;
+          fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
         }
-        if (args.remark != null) { params.remark = String(args.remark); fields.push({ label: '备注', value: String(args.remark) }); }
+        if (args.remark != null) {
+          params.remark = String(args.remark);
+          fields.push({ label: '备注', value: String(args.remark) });
+        }
         if (!fields.length) throw new BusinessException('没有需要修改的字段');
 
         if (mode === 'propose') {
@@ -261,14 +287,19 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const productId = Number(args.productId);
         if (!Number.isFinite(productId) || productId <= 0) throw new BusinessException('商品ID无效');
-        const product = await this.productRepo.findOne({ where: { id: productId, companyId: ctx.companyId } });
+        const product = await this.productRepo.findOne({
+          where: { id: productId, companyId: ctx.companyId },
+        });
         if (!product) throw new BusinessException('商品不存在', 40403);
         const inv = await this.inventoryRepo.findOne({ where: { companyId: ctx.companyId, productId } });
         const quantity = Number(inv?.quantity ?? 0);
 
         if (mode === 'propose') {
           if (quantity > 0) {
-            throw new BusinessException(`商品「${product.name}」仍有库存 ${quantity}，无法删除，请先清零或停用`, 40013);
+            throw new BusinessException(
+              `商品「${product.name}」仍有库存 ${quantity}，无法删除，请先清零或停用`,
+              40013,
+            );
           }
           const preview: PreviewCard = {
             title: '删除商品',
@@ -362,20 +393,38 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const supplierId = Number(args.supplierId);
         if (!Number.isFinite(supplierId) || supplierId <= 0) throw new BusinessException('供应商ID无效');
-        const supplier = await this.supplierRepo.findOne({ where: { id: supplierId, companyId: ctx.companyId } });
+        const supplier = await this.supplierRepo.findOne({
+          where: { id: supplierId, companyId: ctx.companyId },
+        });
         if (!supplier) throw new BusinessException('供应商不存在', 40404);
 
         const fields: Array<{ label: string; value: string }> = [];
         const params: Record<string, unknown> = {};
-        if (args.name != null) { params.name = String(args.name); fields.push({ label: '名称', value: String(args.name) }); }
-        if (args.contact != null) { params.contact = String(args.contact); fields.push({ label: '联系人', value: String(args.contact) }); }
-        if (args.phone != null) { params.phone = String(args.phone); fields.push({ label: '电话', value: String(args.phone) }); }
-        if (args.address != null) { params.address = String(args.address); fields.push({ label: '地址', value: String(args.address) }); }
-        if (args.remark != null) { params.remark = String(args.remark); fields.push({ label: '备注', value: String(args.remark) }); }
+        if (args.name != null) {
+          params.name = String(args.name);
+          fields.push({ label: '名称', value: String(args.name) });
+        }
+        if (args.contact != null) {
+          params.contact = String(args.contact);
+          fields.push({ label: '联系人', value: String(args.contact) });
+        }
+        if (args.phone != null) {
+          params.phone = String(args.phone);
+          fields.push({ label: '电话', value: String(args.phone) });
+        }
+        if (args.address != null) {
+          params.address = String(args.address);
+          fields.push({ label: '地址', value: String(args.address) });
+        }
+        if (args.remark != null) {
+          params.remark = String(args.remark);
+          fields.push({ label: '备注', value: String(args.remark) });
+        }
         if (args.status != null) {
           const v = Number(args.status);
           if (v !== 0 && v !== 1) throw new BusinessException('状态仅可为 0 或 1');
-          params.status = v; fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
+          params.status = v;
+          fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
         }
         if (!fields.length) throw new BusinessException('没有需要修改的字段');
 
@@ -408,7 +457,9 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const supplierId = Number(args.supplierId);
         if (!Number.isFinite(supplierId) || supplierId <= 0) throw new BusinessException('供应商ID无效');
-        const supplier = await this.supplierRepo.findOne({ where: { id: supplierId, companyId: ctx.companyId } });
+        const supplier = await this.supplierRepo.findOne({
+          where: { id: supplierId, companyId: ctx.companyId },
+        });
         if (!supplier) throw new BusinessException('供应商不存在', 40404);
 
         if (mode === 'propose') {
@@ -506,21 +557,42 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const customerId = Number(args.customerId);
         if (!Number.isFinite(customerId) || customerId <= 0) throw new BusinessException('客户ID无效');
-        const customer = await this.customerRepo.findOne({ where: { id: customerId, companyId: ctx.companyId } });
+        const customer = await this.customerRepo.findOne({
+          where: { id: customerId, companyId: ctx.companyId },
+        });
         if (!customer) throw new BusinessException('客户不存在', 40405);
 
         const fields: Array<{ label: string; value: string }> = [];
         const params: Record<string, unknown> = {};
-        if (args.name != null) { params.name = String(args.name); fields.push({ label: '名称', value: String(args.name) }); }
-        if (args.contact != null) { params.contact = String(args.contact); fields.push({ label: '联系人', value: String(args.contact) }); }
-        if (args.phone != null) { params.phone = String(args.phone); fields.push({ label: '电话', value: String(args.phone) }); }
-        if (args.address != null) { params.address = String(args.address); fields.push({ label: '地址', value: String(args.address) }); }
-        if (args.level != null) { params.level = String(args.level); fields.push({ label: '等级', value: String(args.level) }); }
-        if (args.remark != null) { params.remark = String(args.remark); fields.push({ label: '备注', value: String(args.remark) }); }
+        if (args.name != null) {
+          params.name = String(args.name);
+          fields.push({ label: '名称', value: String(args.name) });
+        }
+        if (args.contact != null) {
+          params.contact = String(args.contact);
+          fields.push({ label: '联系人', value: String(args.contact) });
+        }
+        if (args.phone != null) {
+          params.phone = String(args.phone);
+          fields.push({ label: '电话', value: String(args.phone) });
+        }
+        if (args.address != null) {
+          params.address = String(args.address);
+          fields.push({ label: '地址', value: String(args.address) });
+        }
+        if (args.level != null) {
+          params.level = String(args.level);
+          fields.push({ label: '等级', value: String(args.level) });
+        }
+        if (args.remark != null) {
+          params.remark = String(args.remark);
+          fields.push({ label: '备注', value: String(args.remark) });
+        }
         if (args.status != null) {
           const v = Number(args.status);
           if (v !== 0 && v !== 1) throw new BusinessException('状态仅可为 0 或 1');
-          params.status = v; fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
+          params.status = v;
+          fields.push({ label: '状态', value: v === 1 ? '启用' : '停用' });
         }
         if (!fields.length) throw new BusinessException('没有需要修改的字段');
 
@@ -553,7 +625,9 @@ export class BaseAgentTools implements OnModuleInit {
       handler: async (ctx, args, mode) => {
         const customerId = Number(args.customerId);
         if (!Number.isFinite(customerId) || customerId <= 0) throw new BusinessException('客户ID无效');
-        const customer = await this.customerRepo.findOne({ where: { id: customerId, companyId: ctx.companyId } });
+        const customer = await this.customerRepo.findOne({
+          where: { id: customerId, companyId: ctx.companyId },
+        });
         if (!customer) throw new BusinessException('客户不存在', 40405);
 
         if (mode === 'propose') {

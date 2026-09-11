@@ -123,12 +123,15 @@ export class UsersService {
     if (user.isSuperAdmin && data.status === 0) {
       throw new BusinessException('不能停用平台超级管理员', 40003);
     }
-    await this.userRepo.update({ id }, {
-      realName: data.realName ?? user.realName,
-      phone: data.phone ?? user.phone,
-      email: data.email ?? user.email,
-      status: data.status ?? user.status,
-    });
+    await this.userRepo.update(
+      { id },
+      {
+        realName: data.realName ?? user.realName,
+        phone: data.phone ?? user.phone,
+        email: data.email ?? user.email,
+        status: data.status ?? user.status,
+      },
+    );
     if (data.roleIds) await this.permissionService.setUserRoles(id, data.roleIds);
     return this.findOneItem(id);
   }
@@ -138,10 +141,7 @@ export class UsersService {
     const user = await this.userRepo.findOne({ where: { id, companyId } });
     if (!user) throw new BusinessException('用户不存在', 40400);
     // 管理员重置密码同样要吊销目标用户已签发的 token
-    await this.userRepo.update(
-      { id },
-      { password: bcrypt.hashSync(password, 10), pwdChangedAt: new Date() },
-    );
+    await this.userRepo.update({ id }, { password: bcrypt.hashSync(password, 10), pwdChangedAt: new Date() });
     this.logger.log(`password reset for user #${id}`);
   }
 

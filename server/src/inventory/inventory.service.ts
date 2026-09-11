@@ -5,13 +5,8 @@ import { InventoryEntity, InventoryRecordEntity } from '../entities/inventory.en
 import { ProductEntity } from '../entities/product.entity';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { formatDateTime,  todayYmd  } from '../common/utils/no-generator';
-import type {
-  InventoryItem,
-  InventoryRecordItem,
-  InventoryRecordType,
-  PageResult,
-} from '@erp/shared';
+import { formatDateTime, todayYmd } from '../common/utils/no-generator';
+import type { InventoryItem, InventoryRecordItem, InventoryRecordType, PageResult } from '@erp/shared';
 
 export interface MovementOptions {
   companyId: number;
@@ -42,10 +37,7 @@ export class InventoryService {
    * SELECT ... FOR UPDATE 锁行 → 校验非负 → 更新/插入 → 写流水。
    * 防并发超卖的核心方法。
    */
-  async movement(
-    manager: EntityManager,
-    opts: MovementOptions,
-  ): Promise<{ balanceAfter: number }> {
+  async movement(manager: EntityManager, opts: MovementOptions): Promise<{ balanceAfter: number }> {
     const { companyId, productId, delta, type, refType, refNo, operator, remark } = opts;
     if (delta === 0) {
       const row = await manager.query(

@@ -40,7 +40,10 @@ export class FinanceAgentTools implements OnModuleInit {
         properties: {
           keyword: { type: 'string', description: '单据号或往来单位关键字，可选' },
           type: { type: 'string', description: '类型：pay（付款）或 receive（收款），可选' },
-          partnerType: { type: 'string', description: '往来类型：supplier（供应商）或 customer（客户），可选' },
+          partnerType: {
+            type: 'string',
+            description: '往来类型：supplier（供应商）或 customer（客户），可选',
+          },
           page: { type: 'number', description: '页码，默认 1' },
           pageSize: { type: 'number', description: '每页条数，默认 10，最大 50' },
         },
@@ -57,9 +60,7 @@ export class FinanceAgentTools implements OnModuleInit {
           keyword: typeof args.keyword === 'string' && args.keyword ? args.keyword : undefined,
           type: args.type === 'pay' || args.type === 'receive' ? args.type : undefined,
           partnerType:
-            args.partnerType === 'supplier' || args.partnerType === 'customer'
-              ? args.partnerType
-              : undefined,
+            args.partnerType === 'supplier' || args.partnerType === 'customer' ? args.partnerType : undefined,
         });
         return { type: 'data', data: { count: page.total, items: page.list } };
       },
@@ -93,8 +94,16 @@ export class FinanceAgentTools implements OnModuleInit {
       schema: {
         type: 'object',
         properties: {
-          type: { type: 'string', enum: ['pay', 'receive'], description: 'pay=付款给供应商，receive=客户收款' },
-          partnerType: { type: 'string', enum: ['supplier', 'customer'], description: 'supplier=供应商，customer=客户' },
+          type: {
+            type: 'string',
+            enum: ['pay', 'receive'],
+            description: 'pay=付款给供应商，receive=客户收款',
+          },
+          partnerType: {
+            type: 'string',
+            enum: ['supplier', 'customer'],
+            description: 'supplier=供应商，customer=客户',
+          },
           partnerId: { type: 'number', description: '往来单位ID（供应商或客户）' },
           amount: { type: 'number', description: '金额，必须大于 0' },
           payDate: { type: 'string', description: '日期（YYYY-MM-DD），可选，默认今天' },
@@ -151,7 +160,10 @@ export class FinanceAgentTools implements OnModuleInit {
           return { type: 'propose', params, preview };
         }
         const entity = await this.financeService.create(params);
-        return { type: 'data', data: { ok: true, id: entity.id, docNo: entity.docNo, type: entity.type, amount: entity.amount } };
+        return {
+          type: 'data',
+          data: { ok: true, id: entity.id, docNo: entity.docNo, type: entity.type, amount: entity.amount },
+        };
       },
     };
   }

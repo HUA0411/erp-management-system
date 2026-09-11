@@ -36,9 +36,5 @@ export interface AgentTool {
   schema: Record<string, unknown>;
   kind: ToolKind;
   requiredPermission?: string;
-  handler(
-    ctx: ToolContext,
-    args: Record<string, unknown>,
-    mode: 'propose' | 'execute',
-  ): Promise<ToolResult>;
+  handler(ctx: ToolContext, args: Record<string, unknown>, mode: 'propose' | 'execute'): Promise<ToolResult>;
 }

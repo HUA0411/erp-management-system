@@ -136,10 +136,7 @@ export class AiConfigService implements OnModuleInit {
 
   private async canConfigure(user: TenantContextData): Promise<boolean> {
     if (user.isSuperAdmin) return true;
-    const codes = await this.permissionService.getUserPermissionCodes(
-      user.userId!,
-      user.companyId,
-    );
+    const codes = await this.permissionService.getUserPermissionCodes(user.userId!, user.companyId);
     return codes.includes('ai:config');
   }
 

@@ -1,14 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  ArrayUnique,
-  IsArray,
-  IsInt,
-  IsOptional,
-  IsString,
-  Length,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { ArrayUnique, IsArray, IsInt, IsOptional, IsString, Length, MaxLength, Min } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()

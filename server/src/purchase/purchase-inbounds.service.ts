@@ -89,8 +89,7 @@ export class PurchaseInboundsService {
   }
 
   private toDetail(r: PurchaseInboundEntity): InboundDetail {
-    const dateStr =
-      typeof r.inboundDate === 'string' ? r.inboundDate : formatDate(r.inboundDate);
+    const dateStr = typeof r.inboundDate === 'string' ? r.inboundDate : formatDate(r.inboundDate);
     return {
       id: r.id,
       inboundNo: r.inboundNo,

@@ -85,7 +85,8 @@ export class SaleAgentTools implements OnModuleInit {
   private queryTopProducts(): AgentTool {
     return {
       name: 'query_top_products',
-      description: '查询热销商品排行榜（按销售出库数量排序）。返回商品名称、出库数量、销售金额。可用于回答"哪些商品卖得好/销量最高"类问题。',
+      description:
+        '查询热销商品排行榜（按销售出库数量排序）。返回商品名称、出库数量、销售金额。可用于回答"哪些商品卖得好/销量最高"类问题。',
       schema: {
         type: 'object',
         properties: { limit: { type: 'number', description: '返回条数，默认 10，最大 20' } },
@@ -105,7 +106,8 @@ export class SaleAgentTools implements OnModuleInit {
   private queryRecentOrders(): AgentTool {
     return {
       name: 'query_recent_orders',
-      description: '查询最近的采购与销售单据（按日期倒序合并）。返回单据类型（采购/销售）、单号、往来单位、金额、状态、日期。',
+      description:
+        '查询最近的采购与销售单据（按日期倒序合并）。返回单据类型（采购/销售）、单号、往来单位、金额、状态、日期。',
       schema: {
         type: 'object',
         properties: { limit: { type: 'number', description: '返回条数，默认 8，最大 20' } },
@@ -278,7 +280,13 @@ export class SaleAgentTools implements OnModuleInit {
         const order = await this.saleOrdersService.create(params);
         return {
           type: 'data',
-          data: { ok: true, id: order.id, orderNo: order.orderNo, totalAmount: order.totalAmount, status: order.status },
+          data: {
+            ok: true,
+            id: order.id,
+            orderNo: order.orderNo,
+            totalAmount: order.totalAmount,
+            status: order.status,
+          },
         };
       },
     };
@@ -327,8 +335,7 @@ export class SaleAgentTools implements OnModuleInit {
   private cancelSaleOrder(): AgentTool {
     return {
       name: 'cancel_sale_order',
-      description:
-        '取消销售订单。仅草稿或已确认状态的订单可取消。生成操作提案，必须用户确认后执行。',
+      description: '取消销售订单。仅草稿或已确认状态的订单可取消。生成操作提案，必须用户确认后执行。',
       schema: {
         type: 'object',
         properties: { orderId: { type: 'number', description: '销售订单ID' } },
@@ -429,7 +436,10 @@ export class SaleAgentTools implements OnModuleInit {
             { label: '单号', value: order.orderNo },
             { label: '客户', value: order.customerName },
             { label: '金额', value: `¥${order.totalAmount.toFixed(2)}` },
-            { label: '明细', value: (order.items ?? []).map((i) => `${i.productName}×${i.quantity}`).join('、') },
+            {
+              label: '明细',
+              value: (order.items ?? []).map((i) => `${i.productName}×${i.quantity}`).join('、'),
+            },
           ];
           const preview: PreviewCard = {
             title: '销售出库',
@@ -438,7 +448,10 @@ export class SaleAgentTools implements OnModuleInit {
           return { type: 'propose', params: { orderId }, preview };
         }
         const result = await this.saleOrdersService.outbound(orderId);
-        return { type: 'data', data: { ok: true, orderId, orderNo: order.orderNo, ...result, status: 'outbound' } };
+        return {
+          type: 'data',
+          data: { ok: true, orderId, orderNo: order.orderNo, ...result, status: 'outbound' },
+        };
       },
     };
   }

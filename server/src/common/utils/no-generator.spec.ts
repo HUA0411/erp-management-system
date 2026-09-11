@@ -47,7 +47,10 @@ describe('no-generator', () => {
 
   it('nextNo 当天第一次分配得到 0001', async () => {
     const manager = {
-      query: jest.fn().mockResolvedValueOnce({ affectedRows: 1 }).mockResolvedValueOnce([{ n: 1 }]),
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({ affectedRows: 1 })
+        .mockResolvedValueOnce([{ n: 1 }]),
     } as any;
     const no = await nextNo(manager, 'sale_order', 'order_no', 1, 'SO', new Date(2026, 7, 16));
     expect(no).toBe('SO202608160001');
@@ -55,7 +58,10 @@ describe('no-generator', () => {
 
   it('nextNo 序号超过 4 位时不截断', async () => {
     const manager = {
-      query: jest.fn().mockResolvedValueOnce({ affectedRows: 1 }).mockResolvedValueOnce([{ n: 12345 }]),
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({ affectedRows: 1 })
+        .mockResolvedValueOnce([{ n: 12345 }]),
     } as any;
     const no = await nextNo(manager, 'sale_order', 'order_no', 1, 'SO', new Date(2026, 7, 16));
     expect(no).toBe('SO2026081612345');

@@ -8,15 +8,8 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import {
-  formatDateTime,
-  formatDate,
-  nextNo,
-  round2,
-  sleep,
-  todayLocal,
-} from '../common/utils/no-generator';
-import type { OrderItemLine, PageResult, SaleOrderItem } from '@erp/shared';
+import { formatDateTime, formatDate, nextNo, round2, sleep, todayLocal } from '../common/utils/no-generator';
+import type { PageResult, SaleOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
   productId: number;
@@ -116,9 +109,9 @@ export class SaleOrdersService {
         })
         .then((r) => r.identifiers[0].id as number);
 
-      await manager.getRepository(SaleOrderItemEntity).insert(
-        prepared.lines.map((l) => ({ orderId: id, ...l })),
-      );
+      await manager
+        .getRepository(SaleOrderItemEntity)
+        .insert(prepared.lines.map((l) => ({ orderId: id, ...l })));
       return id;
     });
     const order = await this.detail(orderId);
@@ -160,9 +153,7 @@ export class SaleOrdersService {
       );
       if (newLines) {
         await manager.getRepository(SaleOrderItemEntity).delete({ orderId: id });
-        await manager.getRepository(SaleOrderItemEntity).insert(
-          newLines.map((l) => ({ orderId: id, ...l })),
-        );
+        await manager.getRepository(SaleOrderItemEntity).insert(newLines.map((l) => ({ orderId: id, ...l })));
       }
     });
     return this.detail(id);
@@ -320,8 +311,7 @@ export class SaleOrdersService {
   }
 
   private toItem(o: SaleOrderEntity): SaleOrderItem {
-    const dateStr =
-      typeof o.orderDate === 'string' ? o.orderDate : formatDate(o.orderDate);
+    const dateStr = typeof o.orderDate === 'string' ? o.orderDate : formatDate(o.orderDate);
     return {
       id: o.id,
       orderNo: o.orderNo,

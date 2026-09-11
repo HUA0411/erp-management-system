@@ -29,10 +29,9 @@ export class DashboardService {
                  + (SELECT COUNT(*) FROM purchase_order WHERE company_id=? AND DATE(created_at)=CURDATE()) AS v`,
           [companyId, companyId],
         ),
-        this.scalar(
-          `SELECT COUNT(*) AS v FROM purchase_order WHERE company_id=? AND status='confirmed'`,
-          [companyId],
-        ),
+        this.scalar(`SELECT COUNT(*) AS v FROM purchase_order WHERE company_id=? AND status='confirmed'`, [
+          companyId,
+        ]),
         this.scalar(
           `SELECT COUNT(*) AS v FROM inventory i JOIN product p ON p.id=i.product_id AND p.company_id=i.company_id
            WHERE i.company_id=? AND i.quantity < p.safety_stock`,
@@ -99,7 +98,9 @@ export class DashboardService {
   /** 热销商品 TOP N（按出库数量） */
   async topProducts(limit = 10): Promise<TopProduct[]> {
     const companyId = TenantContext.companyId;
-    const rows = await this.dataSource.query<Array<{ productId: string; productName: string; quantity: string; amount: string }>>(
+    const rows = await this.dataSource.query<
+      Array<{ productId: string; productName: string; quantity: string; amount: string }>
+    >(
       `SELECT i.product_id AS productId, i.product_name AS productName,
               SUM(i.quantity) AS quantity, SUM(i.amount) AS amount
        FROM sale_outbound_item i
@@ -120,7 +121,14 @@ export class DashboardService {
   async recentOrders(limit = 8): Promise<RecentOrder[]> {
     const companyId = TenantContext.companyId;
     const rows = await this.dataSource.query<
-      Array<{ type: 'purchase' | 'sale'; orderNo: string; partnerName: string; amount: string; status: string; date: string }>
+      Array<{
+        type: 'purchase' | 'sale';
+        orderNo: string;
+        partnerName: string;
+        amount: string;
+        status: string;
+        date: string;
+      }>
     >(
       `(SELECT 'purchase' AS type, order_no AS orderNo, supplier_name AS partnerName,
                total_amount AS amount, status, order_date AS date

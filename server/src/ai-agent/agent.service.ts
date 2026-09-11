@@ -19,9 +19,7 @@ const MAX_ITERATIONS = 8;
 const MAX_HISTORY = 20;
 
 /** 流式事件：文本增量 / 交互卡片（前端实时渲染） */
-export type AgentStreamEvent =
-  | { type: 'text'; text: string }
-  | { type: 'card'; card: AiCard };
+export type AgentStreamEvent = { type: 'text'; text: string } | { type: 'card'; card: AiCard };
 
 /**
  * 对话循环（DSH 式 agent 循环的 ERP 版）：
@@ -129,19 +127,14 @@ export class AgentService {
     const reasoningEffort = dto.reasoningEffort ?? 'high';
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
-      const res = await this.llm.chat(
-        credentials,
-        llmMessages,
-        tools,
-        {
-          reasoningEffort,
-          onDelta: emit
-            ? (delta) => {
-                if (delta.text) emit({ type: 'text', text: delta.text });
-              }
-            : undefined,
-        },
-      );
+      const res = await this.llm.chat(credentials, llmMessages, tools, {
+        reasoningEffort,
+        onDelta: emit
+          ? (delta) => {
+              if (delta.text) emit({ type: 'text', text: delta.text });
+            }
+          : undefined,
+      });
       if (res.content) finalReply = res.content;
       if (res.reasoningContent) finalReasoning = res.reasoningContent;
 
@@ -184,12 +177,7 @@ export class AgentService {
         }
 
         if (result.type === 'propose') {
-          const created = await this.pendingActions.create(
-            ctx,
-            call.name,
-            result.params,
-            result.preview,
-          );
+          const created = await this.pendingActions.create(ctx, call.name, result.params, result.preview);
           const confirmationCard: AiCard = {
             type: 'confirmation',
             pendingId: created.id,

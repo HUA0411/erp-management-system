@@ -30,9 +30,7 @@ import { AiAgentModule } from './ai-agent/ai-agent.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     // 全局默认限流：每 IP 每分钟 300 次。e2e 需要更高的上限，故支持环境变量覆盖。
-    ThrottlerModule.forRoot([
-      { ttl: 60_000, limit: Number(process.env.THROTTLE_LIMIT ?? 300) },
-    ]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: Number(process.env.THROTTLE_LIMIT ?? 300) }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

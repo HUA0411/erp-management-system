@@ -118,12 +118,15 @@ export class PermissionService {
 
   /** 更新权限基本信息（名称/图标/排序/路由） */
   async updatePermission(id: number, patch: Partial<PermissionEntity>): Promise<void> {
-    await this.permissionRepo.update({ id }, {
-      name: patch.name,
-      icon: patch.icon,
-      sort: patch.sort,
-      path: patch.path,
-    });
+    await this.permissionRepo.update(
+      { id },
+      {
+        name: patch.name,
+        icon: patch.icon,
+        sort: patch.sort,
+        path: patch.path,
+      },
+    );
     this.invalidateAll();
     this.logger.log(`permission #${id} updated`);
   }
@@ -136,9 +139,7 @@ export class PermissionService {
   async setRolePermissions(roleId: number, permissionIds: number[]): Promise<void> {
     await this.rolePermissionRepo.delete({ roleId });
     if (permissionIds.length) {
-      await this.rolePermissionRepo.insert(
-        permissionIds.map((permissionId) => ({ roleId, permissionId })),
-      );
+      await this.rolePermissionRepo.insert(permissionIds.map((permissionId) => ({ roleId, permissionId })));
     }
     const userIds = await this.userRoleRepo.find({ where: { roleId } });
     userIds.forEach((u) => this.invalidateUser(u.userId));
@@ -150,7 +151,6 @@ export class PermissionService {
   }
 
   async setUserRoles(userId: number, roleIds: number[]): Promise<void> {
-    const valid = await this.userRoleRepo.find({ where: { userId } });
     await this.userRoleRepo.delete({ userId });
     if (roleIds.length) {
       await this.userRoleRepo.insert(roleIds.map((roleId) => ({ userId, roleId })));

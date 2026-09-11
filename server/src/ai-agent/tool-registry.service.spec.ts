@@ -29,10 +29,7 @@ describe('ToolRegistryService（插件化工具注册表）', () => {
     ]);
 
     expect(registry.listFor([]).map((t) => t.name)).toEqual(['free']);
-    expect(registry.listFor(['inventory:adjust']).map((t) => t.name)).toEqual([
-      'free',
-      'adjust',
-    ]);
+    expect(registry.listFor(['inventory:adjust']).map((t) => t.name)).toEqual(['free', 'adjust']);
     // 超管（*）可见全部
     expect(registry.listFor(['*']).map((t) => t.name)).toEqual(['free', 'adjust', 'po']);
   });

@@ -259,7 +259,7 @@ export interface FlatPermission {
 export function flattenPermissions(): FlatPermission[] {
   const flat: FlatPermission[] = [];
   const walk = (nodes: SeedPermissionNode[], parentCode: string | null) => {
-    nodes.forEach((node, index) => {
+    nodes.forEach((node) => {
       flat.push({
         parentCode,
         name: node.name,

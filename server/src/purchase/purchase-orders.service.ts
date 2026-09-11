@@ -8,15 +8,8 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import {
-  formatDateTime,
-  formatDate,
-  nextNo,
-  round2,
-  sleep,
-  todayLocal,
-} from '../common/utils/no-generator';
-import type { OrderItemLine, PageResult, PurchaseOrderItem } from '@erp/shared';
+import { formatDateTime, formatDate, nextNo, round2, sleep, todayLocal } from '../common/utils/no-generator';
+import type { PageResult, PurchaseOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
   productId: number;
@@ -156,7 +149,17 @@ export class PurchaseOrdersService {
       : undefined;
     if (dto.supplierId && !supplier) throw new BusinessException('供应商不存在或已停用', 40018);
 
-    let lines: { productId: number; productName: string; spec?: string; unit?: string; quantity: number; price: number; amount: number }[] | undefined;
+    let lines:
+      | {
+          productId: number;
+          productName: string;
+          spec?: string;
+          unit?: string;
+          quantity: number;
+          price: number;
+          amount: number;
+        }[]
+      | undefined;
     let total = order.totalAmount;
     if (dto.items) {
       const prepared = await this.prepareItems(dto.items);
@@ -177,9 +180,9 @@ export class PurchaseOrdersService {
       );
       if (lines) {
         await manager.getRepository(PurchaseOrderItemEntity).delete({ orderId: id });
-        await manager.getRepository(PurchaseOrderItemEntity).insert(
-          lines.map((l) => ({ orderId: id, ...l })),
-        );
+        await manager
+          .getRepository(PurchaseOrderItemEntity)
+          .insert(lines.map((l) => ({ orderId: id, ...l })));
       }
     });
     return this.detail(id);
@@ -333,8 +336,7 @@ export class PurchaseOrdersService {
   }
 
   private toItem(o: PurchaseOrderEntity): PurchaseOrderItem {
-    const dateStr =
-      typeof o.orderDate === 'string' ? o.orderDate : formatDate(o.orderDate);
+    const dateStr = typeof o.orderDate === 'string' ? o.orderDate : formatDate(o.orderDate);
     return {
       id: o.id,
       orderNo: o.orderNo,

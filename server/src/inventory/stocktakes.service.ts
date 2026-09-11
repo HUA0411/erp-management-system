@@ -7,7 +7,7 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from './inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { formatDateTime,  nextNo, round2  } from '../common/utils/no-generator';
+import { formatDateTime, nextNo, round2 } from '../common/utils/no-generator';
 import type { PageResult, StocktakeStatus } from '@erp/shared';
 
 export interface StocktakeQuery {
@@ -79,7 +79,10 @@ export class StocktakesService {
     };
   }
 
-  async create(data: { remark?: string; items: Array<{ productId: number; actualQty: number }> }): Promise<StocktakeDetail> {
+  async create(data: {
+    remark?: string;
+    items: Array<{ productId: number; actualQty: number }>;
+  }): Promise<StocktakeDetail> {
     const companyId = TenantContext.companyId;
     const productIds = [...new Set(data.items.map((i) => i.productId))];
     const products = await this.productRepo.find({
@@ -117,9 +120,7 @@ export class StocktakesService {
           createdBy: TenantContext.userId,
         })
         .then((r) => r.identifiers[0].id as number);
-      await manager.getRepository(StocktakeItemEntity).insert(
-        lines.map((l) => ({ stocktakeId: id, ...l })),
-      );
+      await manager.getRepository(StocktakeItemEntity).insert(lines.map((l) => ({ stocktakeId: id, ...l })));
       return id;
     });
     this.logger.log(`stocktake created: #${stocktake}`);

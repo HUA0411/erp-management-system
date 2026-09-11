@@ -69,9 +69,7 @@ export class LogsService {
     const { page, pageSize, keyword, module } = query;
     const companyId = TenantContext.companyId;
 
-    const qb = this.logRepo
-      .createQueryBuilder('l')
-      .where('l.company_id = :cid', { cid: companyId });
+    const qb = this.logRepo.createQueryBuilder('l').where('l.company_id = :cid', { cid: companyId });
 
     if (module) {
       qb.andWhere('l.module = :module', { module });

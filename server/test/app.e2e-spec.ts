@@ -21,9 +21,7 @@ describe('ERP API e2e（真实 MySQL）', () => {
   });
 
   const login = (companyCode: string, username: string, password: string) =>
-    request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ companyCode, username, password });
+    request(app.getHttpServer()).post('/api/auth/login').send({ companyCode, username, password });
 
   const auth = (token: string) => (req: request.Test) => req.set('Authorization', `Bearer ${token}`);
 
@@ -67,15 +65,19 @@ describe('ERP API e2e（真实 MySQL）', () => {
 
     // 读取 P001 当前库存
     const inv = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=200'));
-    const before = Number(inv.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0);
+    const before = Number(
+      inv.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0,
+    );
 
     // 创建超量销售订单并确认
     const create = await auth(token)(
-      request(app.getHttpServer()).post('/api/sale-orders').send({
-        customerId: 1,
-        orderDate: '2026-08-16',
-        items: [{ productId: 1, quantity: 999999, price: 199 }],
-      }),
+      request(app.getHttpServer())
+        .post('/api/sale-orders')
+        .send({
+          customerId: 1,
+          orderDate: '2026-08-16',
+          items: [{ productId: 1, quantity: 999999, price: 199 }],
+        }),
     );
     expect(create.body.code).toBe(0);
     const orderId = create.body.data.id;
@@ -83,13 +85,17 @@ describe('ERP API e2e（真实 MySQL）', () => {
     await auth(token)(request(app.getHttpServer()).put(`/api/sale-orders/${orderId}/confirm`)).expect(200);
 
     // 出库应被业务码 40020 拦截
-    const outbound = await auth(token)(request(app.getHttpServer()).put(`/api/sale-orders/${orderId}/outbound`));
+    const outbound = await auth(token)(
+      request(app.getHttpServer()).put(`/api/sale-orders/${orderId}/outbound`),
+    );
     expect(outbound.body.code).toBe(40020);
     expect(outbound.body.message).toContain('库存不足');
 
     // 库存不变
     const inv2 = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=200'));
-    const after = Number(inv2.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0);
+    const after = Number(
+      inv2.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0,
+    );
     expect(after).toBe(before);
 
     // 清理：取消该订单，避免污染演示数据

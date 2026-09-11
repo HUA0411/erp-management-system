@@ -41,7 +41,7 @@ export class SnakeNamingStrategy extends DefaultNamingStrategy implements Naming
     return 'uq_' + this.snake(tableName) + '_' + columnNames.map((c) => this.snake(c)).join('_');
   }
 
-  relationConstraintName(tableOrName: Table | string, columnNames: string[], where?: string): string {
+  relationConstraintName(tableOrName: Table | string, columnNames: string[], _where?: string): string {
     const tableName = typeof tableOrName === 'string' ? tableOrName : tableOrName.name;
     return 'rel_' + this.snake(tableName) + '_' + columnNames.map((c) => this.snake(c)).join('_');
   }

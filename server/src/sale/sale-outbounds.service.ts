@@ -83,10 +83,7 @@ export class SaleOutboundsService {
   }
 
   private toDetail(r: SaleOutboundEntity): OutboundDetail {
-    const dateStr =
-      typeof r.outboundDate === 'string'
-        ? r.outboundDate
-        : formatDate(r.outboundDate);
+    const dateStr = typeof r.outboundDate === 'string' ? r.outboundDate : formatDate(r.outboundDate);
     return {
       id: r.id,
       outboundNo: r.outboundNo,

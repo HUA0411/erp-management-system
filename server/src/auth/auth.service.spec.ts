@@ -6,7 +6,14 @@ describe('AuthService', () => {
   let service: AuthService;
   const hash = bcrypt.hashSync('123456', 10);
 
-  const makeUserRepo = (user?: { id: number; companyId: number; username: string; password: string; status: number; isSuperAdmin: boolean }) => ({
+  const makeUserRepo = (user?: {
+    id: number;
+    companyId: number;
+    username: string;
+    password: string;
+    status: number;
+    isSuperAdmin: boolean;
+  }) => ({
     createQueryBuilder: jest.fn(() => ({
       addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),

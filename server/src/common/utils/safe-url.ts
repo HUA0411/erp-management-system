@@ -91,7 +91,10 @@ export async function assertSafeOutboundUrl(raw: string, fieldLabel = '接口地
    * Node 的 URL.hostname 对 IPv6 保留方括号（`[::1]`），而 net.isIP('[::1]') 返回 0 ——
    * 不剥掉方括号，整个 IPv6 分支会被静默跳过，`https://[::1]/v1` 就绕过去了（实测确认）。
    */
-  const host = url.hostname.toLowerCase().replace(/\.$/, '').replace(/^\[|\]$/g, '');
+  const host = url.hostname
+    .toLowerCase()
+    .replace(/\.$/, '')
+    .replace(/^\[|\]$/g, '');
 
   if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal')) {
     throw new BusinessException(`${fieldLabel}不允许指向内网地址`, 40043);

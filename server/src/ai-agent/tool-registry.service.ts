@@ -62,11 +62,7 @@ export class ToolRegistryService {
   ): Promise<ToolResult> {
     const tool = this.tools.get(name);
     if (!tool) return { type: 'error', message: `工具 ${name} 不存在` };
-    if (
-      tool.requiredPermission &&
-      !ctx.isSuperAdmin &&
-      !permissionCodes.includes(tool.requiredPermission)
-    ) {
+    if (tool.requiredPermission && !ctx.isSuperAdmin && !permissionCodes.includes(tool.requiredPermission)) {
       return { type: 'error', message: `无权限使用工具 ${name}` };
     }
     try {

@@ -68,10 +68,7 @@ export class AuthService {
         ).map((r) => ({ id: r.id, name: r.name, code: r.code }))
       : [];
 
-    const permissions = await this.permissionService.getUserPermissionCodes(
-      user.id,
-      user.companyId,
-    );
+    const permissions = await this.permissionService.getUserPermissionCodes(user.id, user.companyId);
     const menus = await this.permissionService.getMenuTreeForUser(user.id, user.companyId);
 
     return {

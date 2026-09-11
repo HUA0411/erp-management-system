@@ -10,7 +10,6 @@ import type {
   ChatOptions,
   ConnectionTestResult,
   LlmChatResult,
-  LlmDelta,
   LlmMessage,
   LlmCredentials,
 } from '../src/ai-agent/deepseek-llm.client';
@@ -90,7 +89,10 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
       // 用例5：zhaoliu 澄清脚本（单响应：澄清后循环即停止，不会请求第二次）
       [call('c1', 'ask_clarification', '{"question":"你想补充哪个商品？","options":["商品A","商品B"]}')],
       // 用例6：admin 缺货查询（读流程）
-      [call('c2', 'query_low_stock', '{}'), { content: '根据库存实时数据，当前有 3 个商品低于安全库存。', toolCalls: [] }],
+      [
+        call('c2', 'query_low_stock', '{}'),
+        { content: '根据库存实时数据，当前有 3 个商品低于安全库存。', toolCalls: [] },
+      ],
       // 用例7：admin 补库存 +5（写流程 → 提案）
       [
         call('c3', 'adjust_stock', '{"productId":2,"delta":5,"remark":"AI 补货测试"}'),
@@ -128,12 +130,9 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
   });
 
   const login = (companyCode: string, username: string, password: string) =>
-    request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ companyCode, username, password });
+    request(app.getHttpServer()).post('/api/auth/login').send({ companyCode, username, password });
 
-  const auth = (token: string) => (req: request.Test) =>
-    req.set('Authorization', `Bearer ${token}`);
+  const auth = (token: string) => (req: request.Test) => req.set('Authorization', `Bearer ${token}`);
 
   const postChat = (token: string, body: Record<string, unknown>) =>
     auth(token)(request(app.getHttpServer()).post('/api/ai-agent/chat').send(body));
@@ -244,7 +243,9 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
     // 有文本增量事件 + done 事件
     const textEvent = events.find((e) => e.type === 'text');
     expect(textEvent).toBeDefined();
-    const done = events.find((e) => e.type === 'done') as { data?: { conversationId?: number; reply?: string; cards?: unknown[] } };
+    const done = events.find((e) => e.type === 'done') as {
+      data?: { conversationId?: number; reply?: string; cards?: unknown[] };
+    };
     expect(done).toBeDefined();
     expect(done.data?.conversationId).toBeGreaterThan(0);
     expect((done.data?.reply ?? '').length).toBeGreaterThan(0);
@@ -283,9 +284,7 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
       request(app.getHttpServer()).get('/api/logs?page=1&pageSize=10&module=AI%E5%8A%A9%E6%89%8B'),
     );
     expect(logs.body.code).toBe(0);
-    expect(
-      logs.body.data.list.some((l: { action: string }) => l.action.includes('adjust_stock')),
-    ).toBe(true);
+    expect(logs.body.data.list.some((l: { action: string }) => l.action.includes('adjust_stock'))).toBe(true);
   });
 
   it('取消提案零副作用：库存不变', async () => {

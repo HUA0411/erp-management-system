@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AgentService } from './agent.service';
@@ -116,10 +106,7 @@ export class AiAgentController {
 
   /** 某会话的完整消息历史（仅本人） */
   @Get('conversations/:id/messages')
-  conversationMessages(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: TenantContextData,
-  ) {
+  conversationMessages(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: TenantContextData) {
     return this.agentService.conversationMessages(id, user);
   }
 

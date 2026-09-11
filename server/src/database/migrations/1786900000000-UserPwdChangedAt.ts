@@ -17,7 +17,9 @@ export class UserPwdChangedAt1786900000000 implements MigrationInterface {
       "ALTER TABLE `sys_user` ADD `pwd_changed_at` datetime(6) NULL COMMENT '密码最后修改时间，用于吊销旧 JWT'",
     );
     // 回填：老用户视为从未改过密码，取创建时间，避免与新签发 token 的时间戳比较时误判
-    await queryRunner.query('UPDATE `sys_user` SET `pwd_changed_at` = `created_at` WHERE `pwd_changed_at` IS NULL');
+    await queryRunner.query(
+      'UPDATE `sys_user` SET `pwd_changed_at` = `created_at` WHERE `pwd_changed_at` IS NULL',
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
