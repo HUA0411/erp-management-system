@@ -30,6 +30,58 @@
       <!-- 确认卡片：预览 + 确定/取消 -->
       <template v-else-if="card.type === 'confirmation'">
         <div class="card-title">{{ card.title }}</div>
+
+        <!-- 库存调整：把「40 → 120」画成两根货位柱。
+             一行文字要靠脑补，两根柱子一眼就能看出"这次调完回到安全线上了"——
+             这正是用户点确认前唯一想知道的事。 -->
+        <div v-if="stockChange(card.rows)" class="stock-change">
+          <div class="slot">
+            <div class="slot-well">
+              <span class="slot-safe" :style="{ bottom: stockChange(card.rows)!.safeAt + '%' }"></span>
+              <span
+                class="slot-fill"
+                :class="stockChange(card.rows)!.beforeLow ? 'is-low' : 'is-ok'"
+                :style="{ height: stockChange(card.rows)!.beforeAt + '%' }"
+              ></span>
+            </div>
+            <div class="slot-k">调整前</div>
+            <div class="slot-v" :class="stockChange(card.rows)!.beforeLow ? 'is-low' : ''">
+              {{ stockChange(card.rows)!.before }}
+            </div>
+          </div>
+
+          <div class="slot-arrow">→</div>
+
+          <div class="slot">
+            <div class="slot-well">
+              <span class="slot-safe" :style="{ bottom: stockChange(card.rows)!.safeAt + '%' }"></span>
+              <span
+                class="slot-fill"
+                :class="stockChange(card.rows)!.afterLow ? 'is-low' : 'is-ok'"
+                :style="{ height: stockChange(card.rows)!.afterAt + '%' }"
+              ></span>
+            </div>
+            <div class="slot-k">调整后</div>
+            <div class="slot-v" :class="stockChange(card.rows)!.afterLow ? 'is-low' : ''">
+              {{ stockChange(card.rows)!.after }}
+            </div>
+          </div>
+
+          <div class="slot-note">
+            <span class="delta">{{ stockChange(card.rows)!.deltaText }}</span>
+            <span class="delta-hint">
+              虚线是安全库存 {{ stockChange(card.rows)!.safe }}<br />
+              {{
+                stockChange(card.rows)!.afterLow
+                  ? '调整后仍低于安全线'
+                  : stockChange(card.rows)!.beforeLow
+                    ? '调整后回到安全线上'
+                    : '调整后仍在安全线上'
+              }}
+            </span>
+          </div>
+        </div>
+
         <div class="preview">
           <div v-for="(row, i) in card.rows" :key="i" class="preview-row">
             <span class="row-label">{{ row.label }}</span>
@@ -76,6 +128,45 @@ import { ref } from 'vue';
 import type { AiCard } from '@erp/shared';
 
 defineProps<{ cards: AiCard[] }>();
+
+/**
+ * 把库存调整的预览行解析成"货位对比"需要的数字。
+ *
+ * 判据是同时出现「当前库存」和「调整后库存」——后端 adjust_stock 的工具
+ * 固定给这两行。别的写操作（下单/收付款）拿不到这些，自然不会画柱子。
+ *
+ * 顶格按 3 倍安全库存算，和看板的货架保持同一套刻度，
+ * 否则同一个商品在两个页面上的柱高对不上，用户会以为哪里算错了。
+ */
+function stockChange(rows: { label: string; value: string }[]) {
+  const pick = (label: string) => rows.find((r) => r.label === label)?.value;
+  const beforeRaw = pick('当前库存');
+  const afterRaw = pick('调整后库存');
+  const safeRaw = pick('安全库存');
+  if (beforeRaw === undefined || afterRaw === undefined) return null;
+
+  const before = Number(beforeRaw);
+  const after = Number(afterRaw);
+  const safe = Number(safeRaw ?? 0);
+  if (!Number.isFinite(before) || !Number.isFinite(after)) return null;
+
+  const cap = safe > 0 ? safe * 3 : Math.max(before, after, 1);
+  const at = (v: number) => Math.max(0, Math.min(100, Math.round((v / cap) * 100)));
+  const delta = after - before;
+
+  return {
+    before,
+    after,
+    safe,
+    beforeAt: at(before),
+    afterAt: at(after),
+    safeAt: safe > 0 ? at(safe) : 0,
+    beforeLow: safe > 0 && before < safe,
+    afterLow: safe > 0 && after < safe,
+    deltaText: `${delta > 0 ? '+' : ''}${delta}`,
+  };
+}
+
 const emit = defineEmits<{
   confirm: [pendingId: number];
   cancel: [pendingId: number];
@@ -205,5 +296,102 @@ function submitCustom() {
     gap: 8px;
     margin-top: 8px;
   }
+}
+
+/* ============ 库存调整的货位对比 ============
+   复用看板货架的刻度：柱高 = 库存 / (安全库存 × 3)，虚线永远在 1/3 处。 */
+.stock-change {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 12px 0 14px;
+  padding: 14px 0 0;
+  border-top: 1px dashed var(--border);
+}
+
+.slot {
+  text-align: center;
+  flex: none;
+}
+
+.slot-well {
+  position: relative;
+  width: 52px;
+  height: 78px;
+  margin: 0 auto;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.slot-safe {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  border-top: 1.5px dashed var(--border-strong);
+}
+
+.slot-fill {
+  width: 40px;
+  border-radius: 5px 5px 0 0;
+  transition: height 0.4s ease;
+
+  &.is-ok {
+    background: linear-gradient(180deg, #46bc90, #2c7059);
+  }
+
+  &.is-low {
+    background: linear-gradient(180deg, #e28069, #a24734);
+  }
+}
+
+.slot-k {
+  margin-top: 9px;
+  font-size: var(--fs-2xs);
+  color: var(--text-3);
+}
+
+.slot-v {
+  margin-top: 3px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--success-text);
+
+  &.is-low {
+    color: var(--danger-text);
+  }
+}
+
+.slot-arrow {
+  padding-bottom: 30px;
+  font-size: var(--fs-lg);
+  color: var(--accent-strong);
+}
+
+.slot-note {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.delta {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  background: var(--success-tint);
+  color: var(--success-text);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--fs-2xs);
+  line-height: 1.7;
+  color: var(--text-3);
 }
 </style>

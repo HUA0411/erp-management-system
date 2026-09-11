@@ -61,9 +61,12 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElTree: typeof import('element-plus/es')['ElTree']
     ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
+    EmptyState: typeof import('./components/EmptyState.vue')['default']
     ResponsiveList: typeof import('./components/ResponsiveList.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ShelfArt: typeof import('./components/ShelfArt.vue')['default']
+    ShelfRack: typeof import('./components/ShelfRack.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

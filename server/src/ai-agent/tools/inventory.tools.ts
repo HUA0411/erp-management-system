@@ -386,6 +386,10 @@ export class InventoryAgentTools implements OnModuleInit {
               { label: '当前库存', value: String(current) },
               { label: '调整量', value: `${delta > 0 ? '+' : ''}${delta}` },
               { label: '调整后库存', value: String(after) },
+              // 前端拿这三个数把调整前后画成"货位高度对比"。
+              // 少了安全库存就画不出安全线，用户也就看不出这次调整
+              // 到底有没有把货补回线上 —— 那正是他要确认的事。
+              { label: '安全库存', value: String(product.safetyStock ?? 0) },
               ...(typeof args.remark === 'string' && args.remark
                 ? [{ label: '备注', value: args.remark }]
                 : []),

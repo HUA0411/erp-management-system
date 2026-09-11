@@ -19,6 +19,21 @@
       </div>
     </div>
 
+    <div class="page-card">
+      <div class="card-head">
+        <span class="card-title">货架</span>
+        <span class="card-tip">柱高 = 库存 / 3 倍安全库存 · 虚线是安全库存 · 颜色是周转</span>
+      </div>
+      <ShelfRack v-if="shelfItems.length" :items="shelfItems" />
+      <EmptyState
+        v-else
+        variant="first"
+        title="货架还是空的"
+        desc="先录商品并做一次入库，这里就会长出货物来。"
+        compact
+      />
+    </div>
+
     <!-- 图表区 -->
     <div class="chart-row">
       <div class="page-card chart-main">
@@ -81,7 +96,13 @@
             <div class="alert-qty num">库存 {{ fmtQty(a.quantity) }} / 安全 {{ fmtQty(a.safetyStock) }}</div>
           </div>
         </div>
-        <el-empty v-else description="库存充足，暂无预警" :image-size="70" />
+        <EmptyState
+          v-else
+          variant="all-good"
+          title="每个货位都在安全线以上"
+          :desc="`${summary?.productCount ?? 0} 个在售商品暂无缺货风险，补货计划可以缓一缓 —— 这是好事，不是「没数据」。`"
+          compact
+        />
       </div>
     </div>
   </div>
@@ -91,6 +112,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Money, Warning, Coin, ShoppingCart } from '@element-plus/icons-vue';
 import { dashboardApi, inventoryApi } from '@/api';
+import EmptyState from '@/components/EmptyState.vue';
+import ShelfRack from '@/components/ShelfRack.vue';
 import { fontsReady, token, useEChart, type EChartsCoreOption } from '@/utils/echarts';
 import { fmtMoney, fmtQty, ORDER_STATUS } from '@/utils';
 import type { DashboardSummary, InventoryItem, RecentOrder, TopProduct, TrendPoint } from '@erp/shared';
@@ -100,6 +123,8 @@ const trendPoints = ref<TrendPoint[]>([]);
 const topProducts = ref<TopProduct[]>([]);
 const recentOrders = ref<RecentOrder[]>([]);
 const alerts = ref<InventoryItem[]>([]);
+/** 货架要展示全部在售商品，不能只用 alerts —— 那只有低于安全线的几条 */
+const shelfItems = ref<InventoryItem[]>([]);
 const trendDays = ref(30);
 
 const stats = computed(() => [
@@ -251,6 +276,11 @@ onMounted(async () => {
     dashboardApi.recentOrders(),
     inventoryApi.alerts().catch(() => [] as InventoryItem[]),
   ]);
+  // 货架单独取一次，并且不阻塞首屏：拿不到就先空着，别把整个看板拖住
+  inventoryApi
+    .current({ page: 1, pageSize: 12 })
+    .then((res) => (shelfItems.value = res.list))
+    .catch(() => (shelfItems.value = []));
   await fontsReady; // 中文字体就绪后再画，否则 Canvas 上的中文变方框
   summary.value = s;
   trendPoints.value = tp;
@@ -332,6 +362,25 @@ onUnmounted(() => {
 
   &.lower {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+
+.card-tip {
+  margin-left: auto;
+  font-size: var(--fs-2xs);
+  color: var(--text-4);
+  letter-spacing: 0.02em;
+}
+
+/* 窄屏下这句说明会把「货架」标题挤成竖排两个字 —— 手机上看柱子本身就懂了，
+   说明文字可以直接收掉。 */
+@media (max-width: 640px) {
+  .card-tip {
+    display: none;
+  }
+
+  .card-title {
+    white-space: nowrap;
   }
 }
 
