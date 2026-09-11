@@ -15,13 +15,13 @@
         <el-table-column prop="spec" label="规格" width="120" show-overflow-tooltip />
         <el-table-column prop="unit" label="单位" width="70" align="center" />
         <el-table-column label="当前库存" width="120" align="right">
-          <template #default="{ row }"><span class="num" style="color: #d9534f; font-weight: 700">{{ fmtQty(row.quantity) }}</span></template>
+          <template #default="{ row }"><span class="num" style="color: var(--danger-text); font-weight: 700">{{ fmtQty(row.quantity) }}</span></template>
         </el-table-column>
         <el-table-column label="安全库存" width="110" align="right">
           <template #default="{ row }"><span class="num">{{ fmtQty(row.safetyStock) }}</span></template>
         </el-table-column>
         <el-table-column label="缺口" width="120" align="right">
-          <template #default="{ row }"><span class="num" style="color: #e07b1f">{{ fmtQty(row.safetyStock - row.quantity) }}</span></template>
+          <template #default="{ row }"><span class="num" style="color: var(--warning-text)">{{ fmtQty(row.safetyStock - row.quantity) }}</span></template>
         </el-table-column>
         <el-table-column label="建议补货量" width="120" align="right">
           <template #default="{ row }">

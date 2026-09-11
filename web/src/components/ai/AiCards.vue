@@ -37,10 +37,24 @@
           </div>
         </div>
         <div class="action-row">
-          <el-button size="small" type="primary" @click="$emit('confirm', card.pendingId)">
+          <!-- 防重复执行：请求期间 loading + 两个按钮都禁用。
+               后端也有行锁兜底，但前端必须拦住，否则用户看到的是"点了两次"。 -->
+          <el-button
+            size="small"
+            type="primary"
+            :loading="busyId === card.pendingId"
+            :disabled="busyId !== null"
+            @click="confirm(card.pendingId)"
+          >
             确定
           </el-button>
-          <el-button size="small" @click="$emit('cancel', card.pendingId)">取消</el-button>
+          <el-button
+            size="small"
+            :disabled="busyId !== null"
+            @click="cancel(card.pendingId)"
+          >
+            取消
+          </el-button>
         </div>
       </template>
 
@@ -80,6 +94,31 @@ const emit = defineEmits<{
 
 const customText = ref('');
 
+/**
+ * 正在处理中的提案 ID。
+ * 非空时所有确认/取消按钮一律禁用 —— 防止连点导致同一笔写操作执行两次。
+ * 父组件处理完（成功或失败）必须调用 done() 复位。
+ */
+const busyId = ref<number | null>(null);
+
+function confirm(pendingId: number) {
+  if (busyId.value !== null) return;
+  busyId.value = pendingId;
+  emit('confirm', pendingId);
+}
+
+function cancel(pendingId: number) {
+  if (busyId.value !== null) return;
+  busyId.value = pendingId;
+  emit('cancel', pendingId);
+}
+
+/** 由父组件在请求结束后调用，恢复按钮可点 */
+function done() {
+  busyId.value = null;
+}
+defineExpose({ done });
+
 function submitCustom() {
   const text = customText.value.trim();
   if (!text) return;
@@ -97,23 +136,23 @@ function submitCustom() {
 }
 
 .ai-card {
-  background: #f7f9fc;
-  border: 1px solid #e3e9f2;
-  border-radius: 8px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--card-radius);
   padding: 10px 12px;
 
   .card-title {
-    font-size: 13px;
+    font-size: var(--fs-base);
     font-weight: 600;
-    color: #2b3445;
+    color: var(--text-1);
     margin-bottom: 8px;
 
     &.ok {
-      color: #2f9e6e;
+      color: var(--success-text);
     }
 
     &.fail {
-      color: #d9534f;
+      color: var(--danger-text);
     }
   }
 
@@ -126,15 +165,15 @@ function submitCustom() {
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
 
       .row-label {
-        color: #7a8699;
+        color: var(--text-3);
         flex-shrink: 0;
       }
 
       .row-value {
-        color: #2b3445;
+        color: var(--text-1);
         text-align: right;
         word-break: break-all;
       }
@@ -148,18 +187,18 @@ function submitCustom() {
     margin-bottom: 8px;
 
     .option-btn {
-      border: 1px solid #c9d7ea;
-      background: #fff;
-      color: #2456a6;
-      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--el-color-primary);
+      border-radius: var(--radius-md);
       padding: 4px 12px;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       cursor: pointer;
       transition: all 0.15s ease;
 
       &:hover {
-        background: #e9eff8;
-        border-color: #2456a6;
+        background: var(--el-color-primary-light-9);
+        border-color: var(--el-color-primary);
       }
     }
   }

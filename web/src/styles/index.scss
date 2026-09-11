@@ -1,6 +1,6 @@
 /* ============ 企业主题：深蓝主色 + 琥珀强调 ============ */
 :root {
-  /* 主色 #2456a6 的亮暗变体 */
+  /* 主色 #2456a6 的亮暗变体（brand.ts 会按配置覆盖同名变量） */
   --el-color-primary: #2456a6;
   --el-color-primary-light-3: #5d81bd;
   --el-color-primary-light-5: #8aa9d2;
@@ -12,7 +12,6 @@
   --el-color-success: #2f9e6e;
   --el-color-warning: #f2a33c;
   --el-color-danger: #d9534f;
-  --el-color-info: #7a8699;
 
   --el-border-radius-base: 6px;
   --el-border-radius-small: 4px;
@@ -28,7 +27,87 @@
   --page-bg: #f2f5f9;
   --card-radius: 10px;
 
-  --app-font: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  /* 'Noto Sans SC' 由 @fontsource 打包引入（见 main.ts），不依赖系统字体；
+     'PingFang SC' / 'Microsoft YaHei' 仅作为 Mac / Windows 本地优先渲染。 */
+  --app-font: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+
+  /* ============ 语义色（业务样式只准用这一层，不要再写 hex） ============
+     原来散落在各页面的 66 个 hex 收敛到这里。
+     改品牌去 brand.ts，改层次感只改这一层。 */
+
+  /* 文字四级：主 / 次 / 弱 / 最弱 */
+  --text-1: #2b3445;
+  --text-2: #51607a;
+  --text-3: #8a97ab;
+  --text-4: #a3aec0;
+
+  /* 品牌色衍生（主色本身走 --el-color-primary，由 brand.ts 注入） */
+  --brand-strong: #1d4485;
+  --brand-soft: #5d81bd;
+  --brand-tint: #eef3fb;
+
+  /* 强调色衍生（琥珀） */
+  --accent-strong: #c97a1e;
+  --accent-text: #8a6d3b;
+  --accent-tint: #fdf6ee;
+
+  /* 状态色衍生 */
+  --success-text: #2f9e6e;
+  --success-tint: #e9f7f0;
+  --warning-text: #e07b1f;
+  --warning-tint: #fdf7ec;
+  --danger-text: #d9534f;
+  --danger-tint: #fdeaea;
+
+  /* 中性面与边框 */
+  --surface: #ffffff;
+  --surface-muted: #f5f8fc;
+  --surface-sunken: #eef1f6;
+  --border: #dbe3ee;
+  --border-soft: #e8edf4;
+  --border-strong: #c6d0de;
+
+  /* 阴影只有两档：贴纸级 + 浮起级 */
+  --shadow-sm: 0 1px 2px rgba(20, 38, 63, 0.06);
+  --shadow-md: 0 4px 14px rgba(36, 86, 166, 0.4);
+
+  /* ============ 字号阶梯（原来 14 种，收敛到 9 档） ============
+     小字号密集的企业后台，12 / 12.5 / 13 三档相邻是有必要的
+     （辅助说明 / 次要信息 / 表格正文）。被砍掉的是 15px —— 与 14px
+     只差 1px，属无意义细分。 */
+  --fs-2xs: 11px;     /* 角标、图表刻度 */
+  --fs-xs: 12px;      /* 辅助说明 */
+  --fs-sm: 12.5px;    /* 次要信息 */
+  --fs-base: 13px;    /* 表格正文 */
+  --fs-md: 14px;      /* 页面正文 */
+  --fs-lg: 18px;      /* 卡片标题 */
+  --fs-xl: 22px;      /* 关键指标 */
+  --fs-2xl: 24px;     /* 页面主标题 */
+  --fs-3xl: 28px;     /* 登录页标题 */
+  --fs-display: 88px; /* 403 / 404 大数字 */
+
+  /* ============ 圆角阶梯（原来 4/6/8/10/12/14 六种混用） ============
+     卡片用 --card-radius（10px）；内层小元素（标签、筛选项、图标底）用下面几档。
+     小元素比卡片更圆是有意的，但必须有名字，不能各写各的。 */
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
+  --radius-xs: 2px;
+  --radius-card-lg: 14px; /* 登录页品牌方块 */
+}
+
+/* Element Plus 内部变量对齐语义色 */
+:root {
+  --el-color-info: var(--text-3);
+  --el-text-color-primary: var(--text-1);
+  --el-text-color-regular: var(--text-2);
+  --el-text-color-secondary: var(--text-3);
+  --el-text-color-placeholder: var(--text-4);
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border-soft);
+  --el-border-color-lighter: var(--border-soft);
+  --el-fill-color-blank: var(--surface);
+  --el-bg-color-page: var(--page-bg);
 }
 
 * {
@@ -45,10 +124,61 @@ body,
 
 body {
   font-family: var(--app-font);
-  font-size: 14px;
-  color: #2b3445;
+  font-size: var(--fs-md);
+  color: var(--text-1);
   background: var(--page-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+/* 表单控件不继承 body 字体：浏览器 UA 样式表给 button/input/select/textarea
+   预设了 font-family:Arial，会盖掉继承链。在没装中文字体的机器上，
+   按钮文字会渲染成方框（图标字体也一样失效）。显式继承。 */
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: inherit;
+}
+
+/* ============ 键盘焦点环（关键修复） ============
+   原来全站 0 处 :focus-visible —— Tab 键走一遍表单，光标在哪完全看不见。
+   政府/国企采购常有无障碍条款，这条能直接卡住验收。
+   :focus-visible 只在键盘操作时命中，鼠标点击不会出现焦点环，不影响观感。 */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible,
+:where(.el-button, .el-select__wrapper, .el-textarea__inner,
+       .el-checkbox, .el-radio, .el-switch, .el-menu-item, .el-tabs__item,
+       .el-pagination button, .el-table__row):focus-visible {
+  outline: 2px solid var(--brand-soft);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Element Plus 给 .el-input__inner 写了 outline:none，同权重且它在后加载 —— 会盖掉上面。
+   所以输入框的焦点环画在外层 wrapper 上（EP 自己的聚焦态也在 wrapper 上）。
+   但 EP 聚焦时 wrapper 自身还会加一圈蓝色边框，两层叠在一起是"双框"，很脏 ——
+   所以键盘聚焦时把 EP 那圈边框压掉，只留我们的焦点环。 */
+.el-input__inner:focus-visible,
+.el-textarea__inner:focus-visible {
+  outline: none;
+}
+
+.el-input__wrapper:has(.el-input__inner:focus-visible) {
+  outline: 2px solid var(--brand-soft);
+  outline-offset: 2px;
+  box-shadow: none !important; /* 去掉 EP 自带的内圈边框，避免双框 */
+}
+
+.el-select__wrapper:has(.el-select__input:focus-visible),
+.el-select__wrapper:has(input:focus-visible) {
+  outline: 2px solid var(--brand-soft);
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+
+/* 深色底上的焦点环改用琥珀色，保证对比度 */
+:where(.sidebar, .login-brand) :focus-visible {
+  outline-color: var(--el-color-warning);
 }
 
 /* 数字对齐：金额/数量使用等宽数字 */
@@ -57,15 +187,18 @@ body {
   font-feature-settings: 'tnum';
 }
 
-/* 页面通用卡片 */
+/* 页面通用容器（19 个业务页面的最外层） */
 .page {
   padding: 16px;
 }
 
+/* 页面通用卡片 —— 全站唯一卡片外壳。
+   统计卡 / AI 卡 / 报表卡一律复用这一个，不再各写一套（原来有 5 套，
+   其中 .stat-card 和 .page-card 只差 2px 内边距，属于无意义差异）。 */
 .page-card {
-  background: #fff;
+  background: var(--surface);
   border-radius: var(--card-radius);
-  box-shadow: 0 1px 2px rgba(20, 38, 63, 0.06);
+  box-shadow: var(--shadow-sm);
   padding: 16px;
   margin-bottom: 14px;
 }
@@ -84,8 +217,8 @@ body {
 
 /* 表格密度与表头 */
 .el-table {
-  --el-table-header-bg-color: #f5f8fc;
-  --el-table-header-text-color: #51607a;
+  --el-table-header-bg-color: var(--surface-muted);
+  --el-table-header-text-color: var(--text-2);
 }
 
 .el-table th.el-table__cell {
@@ -99,12 +232,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c6d0de;
+  background: var(--border-strong);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a9b6c9;
+  background: var(--text-4);
 }
 
 ::-webkit-scrollbar-track {

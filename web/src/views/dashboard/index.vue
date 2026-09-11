@@ -2,7 +2,7 @@
   <div class="page">
     <!-- 统计卡片 -->
     <div class="stat-grid">
-      <div class="stat-card" v-for="(s, i) in stats" :key="s.label" :style="{ animationDelay: `${i * 60}ms` }">
+      <div class="page-card stat-card" v-for="(s, i) in stats" :key="s.label" :style="{ animationDelay: `${i * 60}ms` }">
         <div class="stat-icon" :style="{ background: s.bg, color: s.color }">
           <el-icon :size="22"><component :is="s.icon" /></el-icon>
         </div>
@@ -83,7 +83,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Money, Tickets, Warning, TrendCharts, Box, Coin, ShoppingCart } from '@element-plus/icons-vue';
 import { dashboardApi, inventoryApi } from '@/api';
-import { echarts, useEChart, type EChartsCoreOption } from '@/utils/echarts';
+import { echarts, fontsReady, token, useEChart, type EChartsCoreOption } from '@/utils/echarts';
 import { fmtMoney, fmtQty, ORDER_STATUS } from '@/utils';
 import type { DashboardSummary, InventoryItem, RecentOrder, TopProduct, TrendPoint } from '@erp/shared';
 
@@ -101,32 +101,32 @@ const stats = computed(() => [
     label: '今日销售额',
     value: summary.value ? `¥${fmtMoney(summary.value.todaySaleAmount)}` : '—',
     icon: Money,
-    bg: '#e8f1fd',
-    color: '#2456a6',
+    bg: 'var(--brand-tint)',
+    color: 'var(--el-color-primary)',
     tip: summary.value ? `本月 ¥${fmtMoney(summary.value.monthSaleAmount)}` : '',
   },
   {
     label: '待入库订单',
     value: summary.value?.pendingInboundCount ?? '—',
     icon: ShoppingCart,
-    bg: '#fdf0e0',
-    color: '#e07b1f',
+    bg: 'var(--accent-tint)',
+    color: 'var(--warning-text)',
     tip: '采购已确认未入库',
   },
   {
     label: '低库存预警',
     value: summary.value?.lowStockCount ?? '—',
     icon: Warning,
-    bg: '#fdeaea',
-    color: '#d9534f',
+    bg: 'var(--danger-tint)',
+    color: 'var(--danger-text)',
     tip: `商品总数 ${summary.value?.productCount ?? 0}`,
   },
   {
     label: '应收 / 应付',
     value: summary.value ? `¥${fmtMoney(summary.value.receivable)}` : '—',
     icon: Coin,
-    bg: '#e9f7f0',
-    color: '#2f9e6e',
+    bg: 'var(--success-tint)',
+    color: 'var(--success-text)',
     tip: `应付 ¥${fmtMoney(summary.value?.payable ?? 0)}`,
   },
 ]);
@@ -143,8 +143,8 @@ function renderTrend() {
   const option: EChartsCoreOption = {
     tooltip: { trigger: 'axis', valueFormatter: (v: unknown) => `¥${fmtMoney(Number(v))}` },
     grid: { left: 16, right: 16, top: 30, bottom: 8, containLabel: true },
-    xAxis: { type: 'category', data: dates, boundaryGap: false, axisLine: { lineStyle: { color: '#d9e2ef' } }, axisLabel: { color: '#8a97ab', fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f8' } }, axisLabel: { color: '#8a97ab', fontSize: 11 } },
+    xAxis: { type: 'category', data: dates, boundaryGap: false, axisLine: { lineStyle: { color: token('--border') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: token('--border-soft') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
     series: [
       {
         name: '销售额',
@@ -153,8 +153,8 @@ function renderTrend() {
         symbol: 'circle',
         symbolSize: 5,
         data: amounts,
-        lineStyle: { width: 2.5, color: '#2456a6' },
-        itemStyle: { color: '#2456a6' },
+        lineStyle: { width: 2.5, color: token('--el-color-primary') },
+        itemStyle: { color: token('--el-color-primary') },
         areaStyle: {
           color: {
             type: 'linear',
@@ -178,16 +178,17 @@ function renderTop() {
   const qtys = topProducts.value.map((p) => p.quantity);
   const option: EChartsCoreOption = {
     tooltip: { trigger: 'axis', valueFormatter: (v: unknown) => `${fmtQty(Number(v))}` },
-    grid: { left: 16, right: 30, top: 10, bottom: 8, containLabel: true },
-    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f8' } }, axisLabel: { color: '#8a97ab', fontSize: 11 } },
-    yAxis: { type: 'category', data: names, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#51607a', fontSize: 11 } },
+    // top/bottom 要给首个/末个类目标签留出半个行高，否则 Y 轴第一项文字被裁掉
+    grid: { left: 16, right: 30, top: 20, bottom: 6, containLabel: true },
+    xAxis: { type: 'value', splitLine: { lineStyle: { color: token('--border-soft') } }, axisLabel: { color: token('--text-3'), fontSize: 11 } },
+    yAxis: { type: 'category', data: names, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: token('--text-2'), fontSize: 11 } },
     series: [
       {
         type: 'bar',
         data: qtys,
         barWidth: 12,
-        itemStyle: { borderRadius: [0, 6, 6, 0], color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#2c68c4' }, { offset: 1, color: '#5d81bd' }] } },
-        label: { show: true, position: 'right', fontSize: 11, color: '#8a97ab' },
+        itemStyle: { borderRadius: [0, 6, 6, 0], color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: token('--brand-strong') }, { offset: 1, color: token('--brand-soft') }] } },
+        label: { show: true, position: 'right', fontSize: 11, color: token('--text-3') },
       },
     ],
   };
@@ -208,6 +209,7 @@ onMounted(async () => {
     dashboardApi.recentOrders(),
     inventoryApi.alerts().catch(() => [] as InventoryItem[]),
   ]);
+  await fontsReady; // 中文字体就绪后再画，否则 Canvas 上的中文变方框
   summary.value = s;
   trendPoints.value = tp;
   topProducts.value = top;
@@ -226,19 +228,20 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
 
+/* 响应式：统计卡与图表区的降列规则集中在文件末尾的 @media 块里 */
+
+/* 外壳（背景/圆角/阴影/内边距）复用全局 .page-card，这里只留本页特有部分。
+   原来它自己写了一套，和 .page-card 只差 2px 内边距，属无意义差异。 */
 .stat-card {
-  background: #fff;
-  border-radius: var(--card-radius);
-  padding: 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 1px 2px rgba(20, 38, 63, 0.06);
+  margin-bottom: 0;
   opacity: 0;
   animation: fadeUp 0.4s ease forwards;
   position: relative;
@@ -246,7 +249,7 @@ onUnmounted(() => {
   .stat-icon {
     width: 46px;
     height: 46px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -254,15 +257,15 @@ onUnmounted(() => {
   }
 
   .stat-value {
-    font-size: 22px;
+    font-size: var(--fs-xl);
     font-weight: 700;
-    color: #1d2a44;
+    color: var(--text-2);
     line-height: 1.2;
   }
 
   .stat-label {
-    font-size: 12.5px;
-    color: #8a97ab;
+    font-size: var(--fs-sm);
+    color: var(--text-3);
     margin-top: 3px;
   }
 
@@ -270,9 +273,9 @@ onUnmounted(() => {
     position: absolute;
     right: 14px;
     top: 14px;
-    font-size: 11px;
-    color: #a3aec0;
-    background: #f5f8fc;
+    font-size: var(--fs-2xs);
+    color: var(--text-4);
+    background: var(--surface-muted);
     padding: 3px 8px;
     border-radius: 10px;
   }
@@ -280,11 +283,13 @@ onUnmounted(() => {
 
 .chart-row {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  /* minmax(0, …)：默认的 1fr 最小值是 auto，内容会顶住不缩，
+     必须显式把最小值压到 0，列才能真正跟着容器变窄。 */
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: 14px;
 
   &.lower {
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
 }
 
@@ -295,9 +300,9 @@ onUnmounted(() => {
   margin-bottom: 12px;
 
   .card-title {
-    font-size: 15px;
+    font-size: var(--fs-md);
     font-weight: 600;
-    color: #1d2a44;
+    color: var(--text-2);
   }
 }
 
@@ -313,24 +318,24 @@ onUnmounted(() => {
   overflow-y: auto;
 
   .alert-item {
-    background: #fdf6ee;
-    border: 1px solid #fbe8cd;
-    border-radius: 8px;
+    background: var(--accent-tint);
+    border: 1px solid var(--accent-tint);
+    border-radius: var(--radius-lg);
     padding: 10px 12px;
 
     .alert-name {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 13.5px;
-      color: #33415c;
+      font-size: var(--fs-base);
+      color: var(--text-2);
       font-weight: 500;
     }
 
     .alert-qty {
       margin-top: 4px;
-      font-size: 12px;
-      color: #c97a1e;
+      font-size: var(--fs-xs);
+      color: var(--accent-strong);
     }
   }
 }
@@ -343,6 +348,32 @@ onUnmounted(() => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============ 响应式（原先 0 处媒体查询） ============
+   断点依据实测：1440/1280 正常，1024 起统计卡被挤到 106px，
+   768 起图表只剩 252px。这里只处理"降列"，侧边栏自动收起在 MainLayout 里做。 */
+
+/* ≤1280：统计卡 4 列 → 2 列（留出每张卡的可用宽度） */
+@media (max-width: 1280px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ≤1100：图表区两列 → 单列堆叠 */
+@media (max-width: 1100px) {
+  .chart-row,
+  .chart-row.lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ≤640：统计卡单列，避免 2 列时每张仍不足 200px */
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

@@ -100,6 +100,6 @@ onMounted(load);
 
 .detail-title {
   margin: 18px 0 8px;
-  color: #33415c;
+  color: var(--text-2);
 }
 </style>

@@ -4,15 +4,15 @@
       <div class="summary-row">
         <div class="summary-item">
           <div class="s-label">应收合计</div>
-          <div class="s-value num" style="color: #2456a6">¥{{ fmtMoney(totalReceivable) }}</div>
+          <div class="s-value num" style="color: var(--el-color-primary)">¥{{ fmtMoney(totalReceivable) }}</div>
         </div>
         <div class="summary-item">
           <div class="s-label">应付合计</div>
-          <div class="s-value num" style="color: #e07b1f">¥{{ fmtMoney(totalPayable) }}</div>
+          <div class="s-value num" style="color: var(--warning-text)">¥{{ fmtMoney(totalPayable) }}</div>
         </div>
         <div class="summary-item">
           <div class="s-label">往来净额</div>
-          <div class="s-value num" style="color: #2f9e6e">¥{{ fmtMoney(totalReceivable - totalPayable) }}</div>
+          <div class="s-value num" style="color: var(--success-text)">¥{{ fmtMoney(totalReceivable - totalPayable) }}</div>
         </div>
       </div>
     </div>
@@ -26,11 +26,11 @@
               <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template>
             </el-table-column>
             <el-table-column label="已收款" width="140" align="right">
-              <template #default="{ row }"><span class="num" style="color: #2f9e6e">¥{{ fmtMoney(row.paidAmount) }}</span></template>
+              <template #default="{ row }"><span class="num" style="color: var(--success-text)">¥{{ fmtMoney(row.paidAmount) }}</span></template>
             </el-table-column>
             <el-table-column label="未收余额" width="150" align="right">
               <template #default="{ row }">
-                <span class="num" :style="row.balance > 0 ? 'color:#d9534f;font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
+                <span class="num" :style="row.balance > 0 ? 'color:var(--danger-text);font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -42,11 +42,11 @@
               <template #default="{ row }"><span class="num">¥{{ fmtMoney(row.totalAmount) }}</span></template>
             </el-table-column>
             <el-table-column label="已付款" width="140" align="right">
-              <template #default="{ row }"><span class="num" style="color: #2f9e6e">¥{{ fmtMoney(row.paidAmount) }}</span></template>
+              <template #default="{ row }"><span class="num" style="color: var(--success-text)">¥{{ fmtMoney(row.paidAmount) }}</span></template>
             </el-table-column>
             <el-table-column label="未付余额" width="150" align="right">
               <template #default="{ row }">
-                <span class="num" :style="row.balance > 0 ? 'color:#e07b1f;font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
+                <span class="num" :style="row.balance > 0 ? 'color:var(--warning-text);font-weight:700' : ''">¥{{ fmtMoney(row.balance) }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -95,23 +95,23 @@ onMounted(load);
 
 .summary-item {
   flex: 1;
-  background: linear-gradient(135deg, #f7fafd, #eef3fb);
+  background: linear-gradient(135deg, var(--surface-muted), var(--brand-tint));
   border-radius: 10px;
   padding: 16px 20px;
 
   .s-label {
-    font-size: 12.5px;
-    color: #8a97ab;
+    font-size: var(--fs-sm);
+    color: var(--text-3);
     margin-bottom: 6px;
   }
 
   .s-value {
-    font-size: 24px;
+    font-size: var(--fs-2xl);
     font-weight: 700;
   }
 }
 
 :deep(.balance-row) {
-  --el-table-tr-bg-color: #fdf6ee;
+  --el-table-tr-bg-color: var(--accent-tint);
 }
 </style>

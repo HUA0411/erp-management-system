@@ -60,7 +60,7 @@
         </el-table-column>
         <el-table-column label="差异" width="100" align="right">
           <template #default="{ row }">
-            <span class="num" :style="row.diffQty > 0 ? 'color:#2f9e6e' : row.diffQty < 0 ? 'color:#d9534f' : ''">{{ fmtQty(row.diffQty) }}</span>
+            <span class="num" :style="row.diffQty > 0 ? 'color:var(--success-text)' : row.diffQty < 0 ? 'color:var(--danger-text)' : ''">{{ fmtQty(row.diffQty) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="60" align="center">
@@ -93,7 +93,7 @@
           <el-table-column prop="actualQty" label="实盘" width="90" align="right" />
           <el-table-column label="差异" width="90" align="right">
             <template #default="{ row }">
-              <span class="num" :style="row.diffQty > 0 ? 'color:#2f9e6e' : row.diffQty < 0 ? 'color:#d9534f' : ''">{{ fmtQty(row.diffQty) }}</span>
+              <span class="num" :style="row.diffQty > 0 ? 'color:var(--success-text)' : row.diffQty < 0 ? 'color:var(--danger-text)' : ''">{{ fmtQty(row.diffQty) }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -208,6 +208,6 @@ onMounted(load);
 
 .detail-title {
   margin: 18px 0 8px;
-  color: #33415c;
+  color: var(--text-2);
 }
 </style>

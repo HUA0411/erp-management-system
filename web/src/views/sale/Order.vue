@@ -309,17 +309,17 @@ onMounted(() => {
 
   .items-title {
     font-weight: 600;
-    color: #33415c;
+    color: var(--text-2);
   }
 }
 
 .total-line {
   text-align: right;
   padding: 10px 4px 0;
-  color: #51607a;
+  color: var(--text-2);
 
   .total-amount {
-    font-size: 18px;
+    font-size: var(--fs-lg);
     font-weight: 700;
     color: var(--el-color-danger);
   }
@@ -327,7 +327,7 @@ onMounted(() => {
 
 .detail-title {
   margin: 18px 0 8px;
-  color: #33415c;
+  color: var(--text-2);
 }
 
 .detail-actions {

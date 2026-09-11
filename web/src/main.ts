@@ -1,3 +1,12 @@
+// 字体自持：不依赖操作系统字体。Linux 服务器/容器一般没装中文字体，
+// 靠系统字体兜底会让整个界面中文显示成方框。
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/noto-sans-sc/chinese-simplified-400.css';
+import '@fontsource/noto-sans-sc/chinese-simplified-500.css';
+import '@fontsource/noto-sans-sc/chinese-simplified-600.css';
+
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import ElementPlus from 'element-plus';

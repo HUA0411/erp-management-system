@@ -15,7 +15,7 @@
         <el-table-column prop="unit" label="单位" width="70" align="center" />
         <el-table-column label="当前库存" width="130" align="right">
           <template #default="{ row }">
-            <span class="num" :style="row.isLow ? 'color:#d9534f;font-weight:700' : ''">{{ fmtQty(row.quantity) }}</span>
+            <span class="num" :style="row.isLow ? 'color:var(--danger-text);font-weight:700' : ''">{{ fmtQty(row.quantity) }}</span>
             <el-tag v-if="row.isLow" type="danger" size="small" effect="plain" style="margin-left: 6px">预警</el-tag>
           </template>
         </el-table-column>
@@ -118,6 +118,6 @@ onMounted(load);
 }
 
 :deep(.low-row) {
-  --el-table-tr-bg-color: #fdf6ee;
+  --el-table-tr-bg-color: var(--accent-tint);
 }
 </style>

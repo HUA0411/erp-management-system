@@ -1,6 +1,10 @@
 <template>
   <el-container class="app-shell">
-    <el-aside :width="collapsed ? '64px' : '228px'" class="sidebar">
+    <el-aside
+      :width="collapsed ? '64px' : '228px'"
+      class="sidebar"
+      :class="{ 'is-hidden-mobile': isNarrow && !mobileOpen }"
+    >
       <div class="logo">
         <div class="logo-mark">{{ brand.logoMark }}</div>
         <transition name="fade-slide">
@@ -14,11 +18,11 @@
       <el-scrollbar class="menu-scroll">
         <el-menu
           :default-active="$route.path"
-          :collapse="collapsed"
+          :collapse="menuCollapsed"
           :collapse-transition="false"
           background-color="transparent"
-          text-color="#a8b8cf"
-          active-text-color="#ffffff"
+          text-color="var(--sidebar-text)"
+          active-text-color="var(--surface)"
           class="side-menu"
         >
           <template v-for="node in userStore.menus" :key="node.id">
@@ -28,10 +32,13 @@
       </el-scrollbar>
     </el-aside>
 
+    <!-- 移动端浮层遮罩：点任意处收起侧边栏 -->
+    <div v-if="isNarrow && mobileOpen" class="sidebar-mask" @click="mobileOpen = false" />
+
     <el-container class="main-area">
       <el-header class="header">
         <div class="header-left">
-          <el-icon class="collapse-btn" @click="collapsed = !collapsed">
+          <el-icon class="collapse-btn" @click="toggleSidebar">
             <Expand v-if="collapsed" />
             <Fold v-else />
           </el-icon>
@@ -98,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, reactive, ref } from 'vue';
+import { computed, h, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { ElSubMenu, ElMenuItem, ElIcon } from 'element-plus';
@@ -113,7 +120,53 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 
-const collapsed = ref(false);
+/**
+ * 侧边栏折叠状态。
+ *
+ * 拆成两个量，避免"自动收起"和"用户手动选择"互相覆盖：
+ *   userCollapsed —— 用户点折叠按钮的结果，窗口变宽后要恢复成它
+ *   autoCollapsed —— 窗口宽度不够时系统强制收起，变宽自动解除
+ * 最终态 = 二者取或。
+ */
+const NARROW_BREAKPOINT = 1024; // 实测 1024 起内容区就不够用了
+const MOBILE_BREAKPOINT = 630;  // 以下侧边栏改浮层，见样式里的 @media
+
+const userCollapsed = ref(false);
+const autoCollapsed = ref(false);
+const isNarrow = ref(false);
+/** 移动端浮层是否打开（仅 MOBILE_BREAKPOINT 以下有意义） */
+const mobileOpen = ref(false);
+
+const collapsed = computed(() => userCollapsed.value || autoCollapsed.value);
+
+/* 移动端浮层是"展开"状态，菜单必须显示文字。
+   如果沿用 collapsed（窄屏时恒为 true），浮层里会只剩图标、没有菜单名，
+   用户点了汉堡也看不懂该点哪个。 */
+const menuCollapsed = computed(() => (isNarrow.value && mobileOpen.value ? false : collapsed.value));
+
+function syncBreakpoint() {
+  const w = window.innerWidth;
+  isNarrow.value = w <= MOBILE_BREAKPOINT;
+  autoCollapsed.value = w <= NARROW_BREAKPOINT;
+  if (!isNarrow.value) mobileOpen.value = false;
+}
+
+function toggleSidebar() {
+  if (isNarrow.value) {
+    mobileOpen.value = !mobileOpen.value;
+  } else {
+    userCollapsed.value = !userCollapsed.value;
+  }
+}
+
+onMounted(() => {
+  syncBreakpoint();
+  window.addEventListener('resize', syncBreakpoint);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', syncBreakpoint);
+});
 const avatarText = computed(() => (userStore.user?.realName || userStore.user?.username || 'U').slice(0, 1));
 
 function onCommand(command: string) {
@@ -207,6 +260,34 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   flex-direction: column;
   transition: width 0.2s ease;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 630px 以下：侧边栏 228px 会占掉屏幕一半以上（实测 390px 时占 59%），
+   所以这个宽度下直接隐藏侧边栏，改由头部的折叠按钮唤出。
+   唤出时用固定定位浮在内容之上，不挤压主区。 */
+@media (max-width: 630px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 2000;
+    width: var(--sidebar-width) !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar.is-hidden-mobile {
+    transform: translateX(-100%);
+  }
+
+  /* 浮层打开时的遮罩：点任意处收起 */
+  .sidebar-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 31, 56, 0.45);
+    z-index: 1999;
+  }
 }
 
 .logo {
@@ -222,11 +303,11 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   .logo-mark {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #f2a33c, #e8832a);
-    color: #14263f;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--el-color-warning), var(--warning-text));
+    color: var(--sidebar-bg);
     font-weight: 800;
-    font-size: 18px;
+    font-size: var(--fs-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -234,16 +315,16 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   }
 
   .logo-title {
-    color: #fff;
-    font-size: 15px;
+    color: var(--surface);
+    font-size: var(--fs-md);
     font-weight: 700;
     letter-spacing: 1px;
     white-space: nowrap;
   }
 
   .logo-sub {
-    color: #7e92b0;
-    font-size: 11px;
+    color: var(--text-3);
+    font-size: var(--fs-2xs);
     white-space: nowrap;
     margin-top: 2px;
   }
@@ -261,7 +342,7 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   :deep(.el-sub-menu__title) {
     height: 44px;
     line-height: 44px;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     margin-bottom: 2px;
 
     &:hover {
@@ -270,8 +351,8 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   }
 
   :deep(.el-menu-item.is-active) {
-    background: linear-gradient(90deg, #2456a6, #2c68c4);
-    box-shadow: 0 2px 6px rgba(36, 86, 166, 0.35);
+    background: linear-gradient(90deg, var(--el-color-primary), var(--brand-strong));
+    box-shadow: var(--shadow-md);
   }
 
   :deep(.el-menu) {
@@ -285,12 +366,12 @@ const SideMenuItem = (props: { node: MenuNode }) => {
 
 .header {
   height: var(--header-height);
-  background: #fff;
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: 0 1px 3px rgba(20, 38, 63, 0.07);
+  box-shadow: var(--shadow-sm);
   z-index: 5;
 
   .header-left {
@@ -300,9 +381,9 @@ const SideMenuItem = (props: { node: MenuNode }) => {
   }
 
   .collapse-btn {
-    font-size: 18px;
+    font-size: var(--fs-lg);
     cursor: pointer;
-    color: #51607a;
+    color: var(--text-2);
     &:hover {
       color: var(--el-color-primary);
     }
@@ -314,9 +395,24 @@ const SideMenuItem = (props: { node: MenuNode }) => {
     gap: 16px;
 
     .company-tag {
-      border-color: #c9d7ea;
-      color: #2456a6;
-      background: #eef3fb;
+      border-color: var(--border-strong);
+      color: var(--el-color-primary);
+      background: var(--brand-tint);
+    }
+
+    /* 响应式：公司名标签最长，窄屏先砍它（头像+姓名保留，用户仍能看出是谁） */
+    @media (max-width: 900px) {
+      .company-tag {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      gap: 8px;
+
+      .user-name {
+        display: none;
+      }
     }
 
     .user-entry {
@@ -328,13 +424,13 @@ const SideMenuItem = (props: { node: MenuNode }) => {
 
       .user-avatar {
         background: var(--el-color-primary);
-        color: #fff;
-        font-size: 14px;
+        color: var(--surface);
+        font-size: var(--fs-md);
       }
 
       .user-name {
-        font-size: 14px;
-        color: #2b3445;
+        font-size: var(--fs-md);
+        color: var(--text-1);
       }
     }
   }

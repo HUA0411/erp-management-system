@@ -133,7 +133,7 @@ async function submit() {
 .login-page {
   display: flex;
   height: 100vh;
-  background: #fff;
+  background: var(--surface);
 }
 
 .brand-panel {
@@ -141,7 +141,7 @@ async function submit() {
   background:
     radial-gradient(ellipse 80% 60% at 20% 10%, rgba(242, 163, 60, 0.18), transparent 60%),
     radial-gradient(ellipse 70% 55% at 85% 90%, rgba(36, 86, 166, 0.35), transparent 65%),
-    linear-gradient(150deg, #101f38 0%, #14263f 45%, #1b3560 100%);
+    linear-gradient(150deg, var(--sidebar-bg) 0%, var(--sidebar-bg) 45%, var(--brand-strong) 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -177,7 +177,7 @@ async function submit() {
   z-index: 2;
   width: 80%;
   max-width: 480px;
-  color: #fff;
+  color: var(--surface);
 }
 
 .brand-logo {
@@ -190,11 +190,11 @@ async function submit() {
   .logo-mark {
     width: 52px;
     height: 52px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #f2a33c, #e07b1f);
-    color: #14263f;
+    border-radius: var(--radius-card-lg);
+    background: linear-gradient(135deg, var(--el-color-warning), var(--warning-text));
+    color: var(--sidebar-bg);
     font-weight: 800;
-    font-size: 28px;
+    font-size: var(--fs-3xl);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -202,15 +202,15 @@ async function submit() {
   }
 
   h1 {
-    font-size: 24px;
+    font-size: var(--fs-2xl);
     margin: 0 0 6px;
     letter-spacing: 1px;
   }
 
   p {
     margin: 0;
-    font-size: 13px;
-    color: #8fa3c2;
+    font-size: var(--fs-base);
+    color: var(--sidebar-text);
     letter-spacing: 0.5px;
   }
 }
@@ -229,20 +229,20 @@ async function submit() {
     animation: rise 0.6s ease forwards;
 
     .el-icon {
-      font-size: 20px;
-      color: #f2a33c;
+      font-size: var(--fs-2xl);
+      color: var(--el-color-warning);
       margin-top: 2px;
     }
 
     .point-title {
-      font-size: 15px;
+      font-size: var(--fs-md);
       font-weight: 600;
       margin-bottom: 4px;
     }
 
     .point-desc {
-      font-size: 12.5px;
-      color: #8fa3c2;
+      font-size: var(--fs-sm);
+      color: var(--sidebar-text);
     }
   }
 }
@@ -252,16 +252,16 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
-  color: #6d83a5;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
   opacity: 0;
   animation: rise 0.6s ease forwards;
 
   .bar {
     width: 36px;
     height: 2px;
-    background: #f2a33c;
-    border-radius: 2px;
+    background: var(--el-color-warning);
+    border-radius: var(--radius-xs);
   }
 }
 
@@ -270,24 +270,32 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fbfcfe;
+  background: var(--surface-muted);
 }
 
 .form-box {
   width: 360px;
   padding: 40px 0;
 
+  /* 窄屏：360px 固定宽在手机上会把表单顶到边缘，
+     改成占满可用宽度并留边距 */
+  @media (max-width: 480px) {
+    width: 100%;
+    max-width: 360px;
+    padding: 32px 20px;
+  }
+
   .form-title {
-    font-size: 26px;
+    font-size: var(--fs-2xl);
     margin: 0 0 6px;
-    color: #1d2a44;
+    color: var(--text-2);
     letter-spacing: 0.5px;
   }
 
   .form-sub {
     margin: 0 0 32px;
-    color: #8a97ab;
-    font-size: 13.5px;
+    color: var(--text-3);
+    font-size: var(--fs-base);
   }
 
   .submit-btn {
@@ -295,14 +303,14 @@ async function submit() {
     margin-top: 6px;
     letter-spacing: 6px;
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: var(--card-radius);
     height: 44px;
   }
 
   .form-tips {
     margin-top: 28px;
-    font-size: 12.5px;
-    color: #8a97ab;
+    font-size: var(--fs-sm);
+    color: var(--text-3);
 
     .tip-tag {
       margin: 0 4px 6px 0;
@@ -311,8 +319,8 @@ async function submit() {
 
     .pwd-hint {
       margin-top: 10px;
-      font-size: 12px;
-      color: #b0bac9;
+      font-size: var(--fs-xs);
+      color: var(--text-4);
     }
   }
 }
@@ -325,6 +333,19 @@ async function submit() {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============ 响应式 ============
+   品牌面板里的装饰圆是固定 420px（&::after），会把面板最小宽度锁死在 420px，
+   390px 手机上表单被挤到屏幕外。窄屏直接不显示品牌面板，表单占满。 */
+@media (max-width: 900px) {
+  .brand-panel {
+    display: none;
+  }
+
+  .form-panel {
+    flex: 1;
   }
 }
 </style>

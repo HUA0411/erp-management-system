@@ -20,7 +20,7 @@
         </el-table-column>
         <el-table-column label="变动数量" width="110" align="right">
           <template #default="{ row }">
-            <span class="num" :style="row.quantity < 0 ? 'color:#d9534f' : 'color:#2f9e6e'">
+            <span class="num" :style="row.quantity < 0 ? 'color:var(--danger-text)' : 'color:var(--success-text)'">
               {{ row.quantity > 0 ? '+' : '' }}{{ fmtQty(row.quantity) }}
             </span>
           </template>

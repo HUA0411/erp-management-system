@@ -168,9 +168,10 @@
                   </div>
                   <AiCards
                     v-if="msg.cards?.length"
+                    :ref="(el) => setCardsRef(idx, el)"
                     :cards="msg.cards"
-                    @confirm="confirmAction"
-                    @cancel="cancelAction"
+                    @confirm="(pid) => confirmAction(pid, idx)"
+                    @cancel="(pid) => cancelAction(pid, idx)"
                     @clarify="clarifyAction"
                   />
                 </div>
@@ -223,6 +224,7 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { agentApi } from '@/api';
 import AiCards from './AiCards.vue';
+import type { ComponentPublicInstance } from 'vue';
 import AiMarkdown from './AiMarkdown.vue';
 import { aiProviderPresets } from '@/config/ai-providers';
 import type { AiCard, AiChatResult, AiConfigView, AiConversationBrief, AiReport } from '@erp/shared';
@@ -258,6 +260,18 @@ const currentPreset = computed(
 );
 
 const messages = ref<ChatMsg[]>([]);
+
+/**
+ * 每条消息里的 AiCards 实例（key = 消息下标）。
+ * 子组件在确认/取消期间会禁用按钮防连点，父组件请求结束后必须回调它的 done()
+ * 复位，否则按钮会永久卡在禁用态。
+ */
+const cardsRefs = new Map<number, { done: () => void }>();
+
+function setCardsRef(idx: number, el: Element | ComponentPublicInstance | null) {
+  if (el) cardsRefs.set(idx, el as unknown as { done: () => void });
+  else cardsRefs.delete(idx);
+}
 const input = ref('');
 const thinking = ref(false);
 const conversationId = ref<number | null>(null);
@@ -546,7 +560,7 @@ function resolvePendingCard(pendingId: number, newCard: AiCard | null): boolean 
   return false;
 }
 
-async function confirmAction(pendingId: number) {
+async function confirmAction(pendingId: number, idx: number) {
   thinking.value = true;
   try {
     const res = await agentApi.confirm(pendingId);
@@ -588,11 +602,13 @@ async function confirmAction(pendingId: number) {
     }
   } finally {
     thinking.value = false;
+    // 关键：无论成功失败都要复位子组件按钮，否则永久禁用
+    cardsRefs.get(idx)?.done();
     // 不强制滚动：用户正在当前卡片位置操作，保持视口不动
   }
 }
 
-async function cancelAction(pendingId: number) {
+async function cancelAction(pendingId: number, idx: number) {
   try {
     await agentApi.cancel(pendingId);
     // 就地替换为"已取消"，视口不动
@@ -604,6 +620,8 @@ async function cancelAction(pendingId: number) {
     });
   } catch {
     // 拦截器已提示
+  } finally {
+    cardsRefs.get(idx)?.done();
   }
 }
 
@@ -630,13 +648,13 @@ function scrollToBottom() {
 
 .model-link {
   flex-shrink: 0;
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: underline;
-  font-size: 13px;
+  font-size: var(--fs-base);
   white-space: nowrap;
 
   &:hover {
-    color: #2f6fd6;
+    color: var(--brand-strong);
   }
 }
 
@@ -656,9 +674,9 @@ function scrollToBottom() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  background: linear-gradient(135deg, #2456a6, #2c68c4);
-  box-shadow: 0 4px 14px rgba(36, 86, 166, 0.4);
+  color: var(--surface);
+  background: linear-gradient(135deg, var(--el-color-primary), var(--brand-strong));
+  box-shadow: var(--shadow-md);
   transition: transform 0.15s ease;
 
   &:hover {
@@ -677,7 +695,7 @@ function scrollToBottom() {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e8edf4;
+  border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
 
   .ai-header-title {
@@ -687,14 +705,14 @@ function scrollToBottom() {
   }
 
   .ai-title {
-    font-size: 15px;
+    font-size: var(--fs-md);
     font-weight: 700;
-    color: #2b3445;
+    color: var(--text-1);
   }
 
   .ai-conv-title {
-    font-size: 12px;
-    color: #7a8699;
+    font-size: var(--fs-xs);
+    color: var(--text-3);
     max-width: 130px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -719,8 +737,8 @@ function scrollToBottom() {
   }
 
   .history-title {
-    font-size: 13px;
-    color: #2b3445;
+    font-size: var(--fs-base);
+    color: var(--text-1);
     max-width: 280px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -728,8 +746,8 @@ function scrollToBottom() {
   }
 
   .history-time {
-    font-size: 11px;
-    color: #a3aec0;
+    font-size: var(--fs-2xs);
+    color: var(--text-4);
   }
 }
 
@@ -746,23 +764,23 @@ function scrollToBottom() {
   overflow-y: auto;
 
   .config-tip {
-    font-size: 13px;
-    color: #51607a;
+    font-size: var(--fs-base);
+    color: var(--text-2);
     margin-bottom: 16px;
     padding: 8px 12px;
-    background: #eef3fb;
-    border-radius: 6px;
-    border: 1px solid #dbe6f5;
+    background: var(--brand-tint);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
   }
 
   .config-hint {
-    font-size: 12px;
-    color: #7a8699;
+    font-size: var(--fs-xs);
+    color: var(--text-3);
     line-height: 1.6;
     margin-bottom: 12px;
     padding: 6px 10px;
-    background: #f7f9fc;
-    border-radius: 6px;
+    background: var(--surface-muted);
+    border-radius: var(--radius-md);
   }
 
   .config-actions {
@@ -780,12 +798,12 @@ function scrollToBottom() {
   padding: 24px;
 
   .empty-icon {
-    color: #8aa9d2;
+    color: var(--el-color-primary-light-5);
   }
 
   .empty-text {
-    font-size: 13px;
-    color: #7a8699;
+    font-size: var(--fs-base);
+    color: var(--text-3);
     text-align: center;
     line-height: 1.6;
   }
@@ -807,9 +825,9 @@ function scrollToBottom() {
     padding: 32px 12px;
 
     .hint-title {
-      font-size: 14px;
+      font-size: var(--fs-md);
       font-weight: 600;
-      color: #2b3445;
+      color: var(--text-1);
       margin-bottom: 10px;
     }
 
@@ -817,8 +835,8 @@ function scrollToBottom() {
       display: inline-flex;
       flex-direction: column;
       gap: 6px;
-      font-size: 12.5px;
-      color: #7a8699;
+      font-size: var(--fs-sm);
+      color: var(--text-3);
       line-height: 1.6;
     }
   }
@@ -832,15 +850,15 @@ function scrollToBottom() {
 
       .msg-bubble {
         background: var(--el-color-primary);
-        color: #fff;
+        color: var(--surface);
         border-radius: 10px 10px 2px 10px;
       }
     }
 
     &.assistant {
       .msg-bubble {
-        background: #f2f5f9;
-        color: #2b3445;
+        background: var(--page-bg);
+        color: var(--text-1);
         border-radius: 10px 10px 10px 2px;
       }
     }
@@ -849,9 +867,9 @@ function scrollToBottom() {
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #2456a6, #2c68c4);
-      color: #fff;
-      font-size: 11px;
+      background: linear-gradient(135deg, var(--el-color-primary), var(--brand-strong));
+      color: var(--surface);
+      font-size: var(--fs-2xs);
       font-weight: 700;
       display: flex;
       align-items: center;
@@ -869,21 +887,21 @@ function scrollToBottom() {
 
     .msg-bubble {
       padding: 8px 12px;
-      font-size: 13px;
+      font-size: var(--fs-base);
       line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-word;
 
       &.thinking {
-        color: #7a8699;
+        color: var(--text-3);
       }
     }
   }
 
   .report-card {
-    border: 1px solid #f0d9b0;
-    background: #fdf7ec;
-    border-radius: 8px;
+    border: 1px solid var(--accent-tint);
+    background: var(--accent-tint);
+    border-radius: var(--card-radius);
     padding: 10px 12px;
 
     .report-head {
@@ -893,9 +911,9 @@ function scrollToBottom() {
       margin-bottom: 6px;
 
       .report-title {
-        font-size: 13px;
+        font-size: var(--fs-base);
         font-weight: 600;
-        color: #8a5a17;
+        color: var(--accent-text);
       }
     }
 
@@ -909,26 +927,26 @@ function scrollToBottom() {
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
 
       .report-label {
-        color: #8a6d3b;
+        color: var(--accent-text);
       }
 
       .report-value {
-        color: #5b3d12;
+        color: var(--accent-text);
       }
     }
 
     .report-empty {
-      font-size: 12.5px;
-      color: #8a6d3b;
+      font-size: var(--fs-sm);
+      color: var(--accent-text);
     }
   }
 }
 
 .ai-input {
-  border-top: 1px solid #e8edf4;
+  border-top: 1px solid var(--border-soft);
   padding: 10px 12px;
   flex-shrink: 0;
 
@@ -940,8 +958,8 @@ function scrollToBottom() {
     margin-top: 8px;
 
     .input-tip {
-      font-size: 12px;
-      color: #a3aec0;
+      font-size: var(--fs-xs);
+      color: var(--text-4);
     }
 
     .effort-control {
@@ -951,8 +969,8 @@ function scrollToBottom() {
       min-width: 0;
 
       .effort-label {
-        font-size: 12px;
-        color: #5c6b8a;
+        font-size: var(--fs-xs);
+        color: var(--text-2);
         white-space: nowrap;
       }
 

@@ -21,20 +21,20 @@
 }
 
 .code {
-  font-size: 88px;
+  font-size: var(--fs-display);
   font-weight: 800;
   color: var(--el-color-primary);
   line-height: 1;
 }
 
 .msg {
-  font-size: 18px;
-  color: #2b3445;
+  font-size: var(--fs-lg);
+  color: var(--text-1);
 }
 
 .hint {
-  font-size: 13px;
-  color: #8a97ab;
+  font-size: var(--fs-base);
+  color: var(--text-3);
   margin-bottom: 18px;
 }
 </style>
