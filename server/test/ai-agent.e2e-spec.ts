@@ -3,9 +3,11 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import dataSource from '../src/database/data-source';
+import { assertTestDatabase } from './assert-test-db';
 import { AGENT_LLM_CLIENT } from '../src/ai-agent/agent-llm-client.token';
 import type {
   AgentLlmClient,
+  ChatOptions,
   ConnectionTestResult,
   LlmChatResult,
   LlmDelta,
@@ -28,13 +30,14 @@ class FakeLlmClient implements AgentLlmClient {
     _credentials: LlmCredentials,
     _messages: LlmMessage[],
     tools: ToolDescriptor[],
-    onDelta?: (delta: LlmDelta) => void,
+    opts?: ChatOptions,
   ): Promise<LlmChatResult> {
     this.seenToolLists.push(tools);
     if (!this.current.length) {
       this.current = this.scripts.shift() ?? [{ content: '好的', toolCalls: [] }];
     }
     const res = this.current.shift() ?? { content: '好的', toolCalls: [] };
+    const onDelta = opts?.onDelta;
     if (onDelta && res.content) {
       // 模拟流式分片
       onDelta({ text: res.content.slice(0, 5) });
@@ -72,6 +75,8 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
   let fake: FakeLlmClient;
 
   beforeAll(async () => {
+    // 库名不以 _test 结尾直接拒绝 —— 下面这些 DELETE 会清空真实配置
+    assertTestDatabase();
     // 清理 AI 相关表，保证测试可重复运行
     await dataSource.initialize();
     await dataSource.query('DELETE FROM ai_message');

@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { dataSourceOptions } from './database/data-source';
 import { TenantMiddleware } from './tenant/tenant.middleware';
@@ -29,7 +29,10 @@ import { AiAgentModule } from './ai-agent/ai-agent.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    // 全局默认限流：每 IP 每分钟 300 次。e2e 需要更高的上限，故支持环境变量覆盖。
+    ThrottlerModule.forRoot([
+      { ttl: 60_000, limit: Number(process.env.THROTTLE_LIMIT ?? 300) },
+    ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -62,6 +65,12 @@ import { AiAgentModule } from './ai-agent/ai-agent.module';
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    /**
+     * 限流守卫必须显式注册才生效 —— 只有 ThrottlerModule.forRoot() 是死配置。
+     * 之前这一行缺失，导致登录接口可以被无限次爆破（实测 350 次请求 0 拦截）。
+     * 放在守卫链最前面：超限的请求不应该消耗 JWT 解析和权限查询。
+     */
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],

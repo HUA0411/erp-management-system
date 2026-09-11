@@ -6,8 +6,11 @@ dist/
 server/dist/
 web/dist/
 
-# env
+# env —— .env.* 覆盖 .env.production / .env.test 这类变体；
+# 单独放行 .env.example（唯一应该进仓库的环境文件，里面只有占位值）
 .env
+.env.*
+!.env.example
 .env.local
 *.local
 
@@ -29,3 +32,22 @@ server/uploads/
 shared/dist/
 shared/src/*.js
 shared/src/*.js.map
+
+# 数据库导出 —— 数据库本身跑在 MySQL 服务进程里、不在仓库目录，
+# 但如果有人把 mysqldump 结果落在项目里，这几条能挡住它被 git add -A 带上去
+*.sql
+*.sql.gz
+*.dump
+*.sqlite
+*.sqlite3
+
+# 密钥 / 证书
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# 测试覆盖率
+coverage/

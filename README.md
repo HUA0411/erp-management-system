@@ -35,12 +35,19 @@ npm install
 
 ### 2. 配置数据库连接
 
-复制并修改环境变量文件：
-
 ```bash
-copy server\.env.example server\.env   # Windows
-# 修改 DB_HOST / DB_PORT / DB_USERNAME / DB_PASSWORD / DB_DATABASE / JWT_SECRET
+# 服务端进程的 cwd 是 server/，实际读取的是 server/.env
+# 根目录的 .env 一并放一份，便于在仓库根直接跑脚本
+cp .env.example server/.env
+cp .env.example .env
+
+# 必改：JWT_SECRET（openssl rand -hex 32）
+# 常用：DB_HOST / DB_PORT / DB_USERNAME / DB_PASSWORD / DB_DATABASE
+chmod 600 .env server/.env    # 文件里含数据库口令与 JWT 密钥
 ```
+
+> `JWT_SECRET` 若不修改，服务**会拒绝启动**并给出明确提示 —— 而不是像以前那样
+> 静默使用仓库里公开的占位串（那等于任何人都能伪造任意租户的超管 token）。
 
 ### 3. 初始化数据库（幂等，可重复执行）
 
@@ -134,9 +141,36 @@ npm run db:demo     # 清空后重新注入演示数据（恢复出厂演示状�
 ## 🧪 测试
 
 ```bash
-npm run test        # 单测：库存事务、防超卖、认证（13 用例）
-npm run test:e2e    # e2e：租户隔离、跨租户 404、防超卖、RBAC 403、登录鉴权（7 用例，需数据库已初始化）
+npm run test                      # 单测：库存事务、防超卖、认证（19 用例）
+npm run test:e2e:init -w server   # 首次：创建并初始化独立测试库 erp_system_test
+npm run test:e2e -w server        # e2e：租户隔离、跨租户 404、防超卖、RBAC 403、AI 助手（19 用例）
 ```
+
+> **e2e 强制使用独立测试库。** 测试会对 `ai_config` 等表执行清空操作，
+> 打到生产库会直接抹掉真实配置。库名不以 `_test` 结尾时 `test/assert-test-db.ts`
+> 会直接抛错终止，不依赖任何人记得改环境变量。
+
+## 🔒 安全须知
+
+| 配置项 | 说明 |
+|---|---|
+| `JWT_SECRET` | **必填**。启动时强校验：空值 / `.env.example` 占位串 / 长度 < 32 一律拒绝启动。生成：`openssl rand -hex 32` |
+| `CORS_ORIGINS` | 允许的前端来源（逗号分隔）。默认仅放行 `localhost:5173`，**禁止填 `*`** |
+| `TRUST_PROXY` | 部署在 nginx 后方时设为 `1`，限流才能按真实客户端 IP 统计。无反代时保持 `0`，否则可伪造 `X-Forwarded-For` 绕过限流 |
+| `AI_ALLOWED_HOSTS` | AI 服务商域名白名单。留空表示不限制（仍会拦截 http 与内网地址） |
+| `AI_ALLOW_INSECURE_BASEURL` | 使用内网自建模型（Ollama 等）时设为 `1`，**会关闭 AI 接口地址的 SSRF 防护** |
+| `AI_KEY_ENC_SECRET` | 加密 `ai_config.api_key` 的密钥。留空则从 `JWT_SECRET` 派生。轮换后需重新保存一次 AI 配置 |
+
+已内置的防护：
+
+- 全局限流（默认 300 次/分·IP），登录接口单独收紧为 8 次/分·IP
+- helmet 安全响应头；生产环境启用 CSP，关闭 `X-Powered-By`
+- Swagger 仅在非生产环境暴露
+- 上传白名单仅位图格式（**不含 svg**），`/uploads` 强制 `Content-Disposition: attachment`
+- AI 接口地址出站校验：强制 https、拦截环回/私有/链路本地/云元数据地址，
+  并对域名做 DNS 解析后二次校验
+- `ai_config.api_key` 以 AES-256-GCM 加密落库
+- JWT 可吊销：改密码 / 管理员重置密码 / 停用账号后，已签发 token 在 5 秒内失效
 
 ## 🚢 生产部署
 
@@ -145,10 +179,13 @@ npm run test:e2e    # e2e：租户隔离、跨租户 404、防超卖、RBAC 403�
 npm run build       # server: nest build；web: vite build
 
 # 2. 启动后端（PM2 集群模式，多进程水平扩展）
-pm2 start ecosystem.config.js
+NODE_ENV=production pm2 start ecosystem.config.js
 
 # 3. 前端静态资源由 nginx 托管，并反向代理 /api 与 /uploads 到后端
 ```
+
+> `NODE_ENV=production` 时 Swagger 不再暴露，CSP 生效。
+> `.env` 权限应为 `600`（含数据库口令与 JWT 密钥）。
 
 ```nginx
 server {

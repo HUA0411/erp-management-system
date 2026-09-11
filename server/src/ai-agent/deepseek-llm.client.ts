@@ -231,12 +231,17 @@ export class DeepSeekLlmClient implements AgentLlmClient {
         signal: AbortSignal.timeout(15_000),
       });
       if (res.ok) return { ok: true, message: '连接成功' };
-      const text = await res.text().catch(() => '');
       if (res.status === 401) return { ok: false, message: 'API Key 无效，请检查' };
       if (res.status === 404) {
         return { ok: false, message: '模型名或接口地址不存在，请检查' };
       }
-      return { ok: false, message: `服务返回错误（${res.status}）：${text.slice(0, 120)}` };
+      /**
+       * 只回状态码，不回上游响应体。
+       * 原先是 `服务返回错误（${res.status}）：${text.slice(0, 120)}` —— 由于
+       * baseUrl 由用户自由填写，这个回显等于把服务器变成了内网探测代理：
+       * 指向任意内网地址，就能把对方的响应内容读到客户端。
+       */
+      return { ok: false, message: `服务返回错误（HTTP ${res.status}），请检查接口地址与密钥` };
     } catch {
       return { ok: false, message: '无法连接服务，请检查 API 地址与网络' };
     }

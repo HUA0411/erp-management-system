@@ -5,6 +5,8 @@ import { AiConfigEntity } from '../entities/ai-config.entity';
 import { PermissionEntity } from '../entities/permission.entity';
 import { PermissionService } from '../permission/permission.service';
 import { BusinessException } from '../common/exceptions/business.exception';
+import { assertSafeOutboundUrl } from '../common/utils/safe-url';
+import { decryptSecret, encryptSecret } from '../common/utils/secret-box';
 import { AGENT_LLM_CLIENT } from './agent-llm-client.token';
 import type { TenantContextData } from '../tenant/tenant-context';
 import type { AiConfigPayload, AiConfigView } from '@erp/shared';
@@ -53,7 +55,7 @@ export class AiConfigService implements OnModuleInit {
       provider: cfg?.provider ?? 'custom',
       baseUrl: cfg?.baseUrl ?? 'https://api.deepseek.com',
       model: cfg?.model ?? '',
-      keyMasked: cfg ? this.maskKey(cfg.apiKey) : undefined,
+      keyMasked: cfg ? this.maskKey(decryptSecret(cfg.apiKey)) : undefined,
     };
   }
 
@@ -73,11 +75,22 @@ export class AiConfigService implements OnModuleInit {
     if (!model) {
       throw new BusinessException('请填写模型名', 40034);
     }
+    /**
+     * 出站地址校验（SSRF 防护）：必须 https 且不得指向内网/环回/云元数据地址。
+     * 服务端会主动请求 `${baseUrl}/chat/completions`，不校验就等于把 ERP
+     * 当成内网探测代理。自建内网模型需显式设 AI_ALLOW_INSECURE_BASEURL=1。
+     */
+    const baseUrl = await assertSafeOutboundUrl(
+      dto.baseUrl?.trim() || existing?.baseUrl || 'https://api.deepseek.com',
+      'AI 接口地址',
+    );
+
     const next = {
       companyId,
-      apiKey,
+      // 落库前加密（AES-256-GCM）。encryptSecret 幂等，回退到 existing.apiKey 时不会二次加密。
+      apiKey: encryptSecret(apiKey),
       provider: dto.provider?.trim() || existing?.provider || 'custom',
-      baseUrl: dto.baseUrl?.trim() || existing?.baseUrl || 'https://api.deepseek.com',
+      baseUrl,
       model,
       updatedBy: user.userId,
     };
@@ -97,19 +110,28 @@ export class AiConfigService implements OnModuleInit {
       throw new BusinessException('无权限配置 AI 服务', 40300);
     }
     const existing = await this.configRepo.findOne({ where: { companyId: user.companyId } });
-    const apiKey = dto.apiKey?.trim() || existing?.apiKey;
+    const apiKey = dto.apiKey?.trim() || (existing ? decryptSecret(existing.apiKey) : undefined);
     if (!apiKey) return { ok: false, message: '请填写 API Key' };
-    const baseUrl = dto.baseUrl?.trim() || existing?.baseUrl || 'https://api.deepseek.com';
+    // 测试连接同样会发出站请求，必须走同一道校验（否则这就是绕过点）
+    const baseUrl = await assertSafeOutboundUrl(
+      dto.baseUrl?.trim() || existing?.baseUrl || 'https://api.deepseek.com',
+      'AI 接口地址',
+    );
     const model = dto.model?.trim() || existing?.model;
     if (!model) return { ok: false, message: '请填写模型名' };
     return this.llm.testConnection({ apiKey, baseUrl, model } satisfies LlmCredentials);
   }
 
-  /** 服务内部取完整凭据（仅用于发起 LLM 请求，不对外暴露） */
+  /**
+   * 服务内部取完整凭据（仅用于发起 LLM 请求，不对外暴露）。
+   * 这里也校验一次：库里的历史配置可能是校验逻辑上线前写入的，
+   * 不能假设它一定安全。
+   */
   async getCredentials(companyId: number): Promise<LlmCredentials | null> {
     const cfg = await this.configRepo.findOne({ where: { companyId } });
     if (!cfg) return null;
-    return { apiKey: cfg.apiKey, baseUrl: cfg.baseUrl, model: cfg.model };
+    await assertSafeOutboundUrl(cfg.baseUrl, 'AI 接口地址');
+    return { apiKey: decryptSecret(cfg.apiKey), baseUrl: cfg.baseUrl, model: cfg.model };
   }
 
   private async canConfigure(user: TenantContextData): Promise<boolean> {

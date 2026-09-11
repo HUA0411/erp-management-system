@@ -2,11 +2,13 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { assertTestDatabase } from './assert-test-db';
 
 describe('ERP API e2e（真实 MySQL）', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    assertTestDatabase();
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');

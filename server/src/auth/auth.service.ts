@@ -49,6 +49,8 @@ export class AuthService {
       username: user.username,
       companyId: user.companyId,
       isSuperAdmin: !!user.isSuperAdmin,
+      // 签发时的密码版本：后续请求据此判断 token 是否已被吊销
+      pwdAt: user.pwdChangedAt ? new Date(user.pwdChangedAt).getTime() : 0,
     } satisfies JwtPayload);
 
     return { token, user: await this.buildUserInfo(user, tenant) };
@@ -108,7 +110,8 @@ export class AuthService {
       throw new BusinessException('原密码错误', 40104);
     }
     const hash = bcrypt.hashSync(newPassword, 10);
-    await this.userRepo.update({ id: user.id }, { password: hash });
+    // 同时刷新 pwd_changed_at：本次及此前签发的所有 token 会在 5 秒内全部失效
+    await this.userRepo.update({ id: user.id }, { password: hash, pwdChangedAt: new Date() });
     return { ok: true };
   }
 

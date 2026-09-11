@@ -185,6 +185,8 @@ export class SeedService {
         realName: u.realName,
         status: 1,
         isSuperAdmin: u.roleCodes.includes('SUPER_ADMIN'),
+        // 种子用户的密码「初始设定」时间，需与登录时签发的 token 对得上
+        pwdChangedAt: new Date(),
       });
       const userId = result.identifiers[0].id as number;
       const roleIds = u.roleCodes.map((c) => roleIdByCode.get(c)).filter((id): id is number => !!id);

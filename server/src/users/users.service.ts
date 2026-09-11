@@ -105,6 +105,7 @@ export class UsersService {
         phone: data.phone,
         email: data.email,
         status: data.status ?? 1,
+        pwdChangedAt: new Date(),
       }),
     );
     if (data.roleIds?.length) await this.permissionService.setUserRoles(user.id, data.roleIds);
@@ -136,7 +137,11 @@ export class UsersService {
     const companyId = TenantContext.companyId;
     const user = await this.userRepo.findOne({ where: { id, companyId } });
     if (!user) throw new BusinessException('用户不存在', 40400);
-    await this.userRepo.update({ id }, { password: bcrypt.hashSync(password, 10) });
+    // 管理员重置密码同样要吊销目标用户已签发的 token
+    await this.userRepo.update(
+      { id },
+      { password: bcrypt.hashSync(password, 10), pwdChangedAt: new Date() },
+    );
     this.logger.log(`password reset for user #${id}`);
   }
 
