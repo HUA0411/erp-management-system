@@ -8,7 +8,14 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { formatDateTime, formatDate,  nextNo, round2, todayLocal  } from '../common/utils/no-generator';
+import {
+  formatDateTime,
+  formatDate,
+  nextNo,
+  round2,
+  sleep,
+  todayLocal,
+} from '../common/utils/no-generator';
 import type { OrderItemLine, PageResult, PurchaseOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
@@ -289,15 +296,28 @@ export class PurchaseOrdersService {
     return { lines, products };
   }
 
-  /** 唯一索引冲突（并发取号）时重试 */
+  /**
+   * 事务重试：仅针对可重试的数据库错误（1062 唯一键冲突 / 1213 死锁 / 1205 锁等待超时）。
+   * 每次重试前加随机退避 —— 失败事务若同时重试会再次撞在一起。
+   * 次数用尽后抛业务异常，避免 QueryFailedError 变成「服务器内部错误」。
+   */
   private async withNoRetry<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
+    const MAX_ATTEMPTS = 4;
     let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
         return await this.dataSource.transaction(fn);
       } catch (err) {
         lastError = err;
-        if ((err as { errno?: number })?.errno === 1062 && attempt < 2) continue;
+        const errno = (err as { errno?: number })?.errno;
+        const retryable = errno === 1062 || errno === 1213 || errno === 1205;
+        if (retryable && attempt < MAX_ATTEMPTS - 1) {
+          await sleep(15 + Math.floor(Math.random() * 45) * (attempt + 1));
+          continue;
+        }
+        if (retryable) {
+          throw new BusinessException('当前操作较为频繁，请稍后重试', 40039);
+        }
         throw err;
       }
     }

@@ -23,6 +23,8 @@ const BUSINESS_TABLES = [
   'stocktake',
   'stocktake_item',
   'payment',
+  // 单号计数器：业务数据清空后序号也应从头开始，否则会无意义地跳号
+  'seq_counter',
   'sys_operation_log',
   'ai_config',
   'ai_conversation',

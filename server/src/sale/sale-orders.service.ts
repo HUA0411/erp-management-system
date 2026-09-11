@@ -8,7 +8,14 @@ import { ProductEntity } from '../entities/product.entity';
 import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { formatDateTime, formatDate,  nextNo, round2, todayLocal  } from '../common/utils/no-generator';
+import {
+  formatDateTime,
+  formatDate,
+  nextNo,
+  round2,
+  sleep,
+  todayLocal,
+} from '../common/utils/no-generator';
 import type { OrderItemLine, PageResult, SaleOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
@@ -270,14 +277,34 @@ export class SaleOrdersService {
     return { lines, products };
   }
 
+  /**
+   * 事务重试：仅针对可重试的数据库错误。
+   *
+   * 1062 唯一键冲突 —— 取号并发兜底（改用 seq_counter 后应极少触发）
+   * 1213 死锁、1205 锁等待超时 —— InnoDB 主动回滚，重试是标准处理方式
+   *
+   * 每次重试前加随机退避：失败的事务如果同时重试会再次撞在一起
+   * （原先无退避，8 个并发请求重试时步调一致，3 次机会只够 3 个成功）。
+   * 重试次数用尽后抛出可读的业务异常，而不是让 QueryFailedError 冒到
+   * 全局过滤器变成光秃秃的「服务器内部错误」。
+   */
   private async withNoRetry<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
+    const MAX_ATTEMPTS = 4;
     let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
         return await this.dataSource.transaction(fn);
       } catch (err) {
         lastError = err;
-        if ((err as { errno?: number })?.errno === 1062 && attempt < 2) continue;
+        const errno = (err as { errno?: number })?.errno;
+        const retryable = errno === 1062 || errno === 1213 || errno === 1205;
+        if (retryable && attempt < MAX_ATTEMPTS - 1) {
+          await sleep(15 + Math.floor(Math.random() * 45) * (attempt + 1));
+          continue;
+        }
+        if (retryable) {
+          throw new BusinessException('当前操作较为频繁，请稍后重试', 40039);
+        }
         throw err;
       }
     }

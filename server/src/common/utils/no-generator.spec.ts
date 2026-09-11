@@ -23,21 +23,41 @@ describe('no-generator', () => {
     expect(formatDate(new Date(2026, 7, 16, 0, 0, 0))).toBe('2026-08-16');
   });
 
-  it('nextNo 按前缀+日期+序号生成', async () => {
+  it('nextNo 原子自增分配序号（不再用 COUNT(*) 推算）', async () => {
     const manager = {
-      query: jest.fn().mockResolvedValue([{ cnt: 3 }]),
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({ affectedRows: 1 }) // INSERT ... ON DUPLICATE KEY UPDATE
+        .mockResolvedValueOnce([{ n: 4 }]), // SELECT ... FOR UPDATE
     } as any;
     const no = await nextNo(manager, 'purchase_order', 'order_no', 1, 'PO', new Date(2026, 7, 16));
+
     expect(no).toBe('PO202608160004');
-    expect(manager.query).toHaveBeenCalledWith(
-      expect.stringContaining('COUNT(*)'),
-      [1, 'PO20260816%'],
-    );
+
+    // 第一条：原子自增，冲突则 +1；绝不能出现 COUNT(*)
+    const [upsertSql, upsertParams] = manager.query.mock.calls[0];
+    expect(upsertSql).toContain('ON DUPLICATE KEY UPDATE n = n + 1');
+    expect(upsertSql).not.toContain('COUNT(*)');
+    expect(upsertParams).toEqual([1, 'purchase_order.order_no', '20260816']);
+
+    // 第二条：必须带 FOR UPDATE，否则 RR 隔离级别下会读到快照里的旧值
+    const [selectSql] = manager.query.mock.calls[1];
+    expect(selectSql).toContain('FOR UPDATE');
   });
 
-  it('nextNo 当日无记录时从 0001 开始', async () => {
-    const manager = { query: jest.fn().mockResolvedValue([{ cnt: 0 }]) } as any;
+  it('nextNo 当天第一次分配得到 0001', async () => {
+    const manager = {
+      query: jest.fn().mockResolvedValueOnce({ affectedRows: 1 }).mockResolvedValueOnce([{ n: 1 }]),
+    } as any;
     const no = await nextNo(manager, 'sale_order', 'order_no', 1, 'SO', new Date(2026, 7, 16));
     expect(no).toBe('SO202608160001');
+  });
+
+  it('nextNo 序号超过 4 位时不截断', async () => {
+    const manager = {
+      query: jest.fn().mockResolvedValueOnce({ affectedRows: 1 }).mockResolvedValueOnce([{ n: 12345 }]),
+    } as any;
+    const no = await nextNo(manager, 'sale_order', 'order_no', 1, 'SO', new Date(2026, 7, 16));
+    expect(no).toBe('SO2026081612345');
   });
 });
