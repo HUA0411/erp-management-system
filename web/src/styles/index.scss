@@ -1,89 +1,99 @@
-/* ============ 企业主题：深蓝主色 + 琥珀强调 ============ */
+/* ============ 企业主题：墨绿主色 + 铜色强调 ============
+
+   视觉母题是「货架」：货位高度 = 库存水位，隔板虚线 = 安全库存，
+   箱体颜色 = 周转速度。这套色板刻意避开"后台默认蓝"——
+   蓝色在客户和 HR 眼里约等于"网上模板改的"。
+
+   改品牌：主色 / 强调色 / 侧边栏底色去 config/brand.ts，
+   下面这一层只负责把它们摊成可用的语义变量。 */
 :root {
-  /* 主色 #2456a6 的亮暗变体（brand.ts 会按配置覆盖同名变量） */
-  --el-color-primary: #2456a6;
-  --el-color-primary-light-3: #5d81bd;
-  --el-color-primary-light-5: #8aa9d2;
-  --el-color-primary-light-7: #b8cbe5;
-  --el-color-primary-light-8: #cfdced;
-  --el-color-primary-light-9: #e9eff8;
-  --el-color-primary-dark-2: #1d4485;
+  /* 主色 #1f5c4a 的亮暗变体（brand.ts 会按配置覆盖同名变量） */
+  --el-color-primary: #1f5c4a;
+  --el-color-primary-light-3: #5f8b7d;
+  --el-color-primary-light-5: #8fada4;
+  --el-color-primary-light-7: #bfd0ca;
+  --el-color-primary-light-8: #d5e0dc;
+  --el-color-primary-light-9: #e9f0ed;
+  --el-color-primary-dark-2: #194a3b;
 
-  --el-color-success: #2f9e6e;
-  --el-color-warning: #f2a33c;
-  --el-color-danger: #d9534f;
+  /* 状态色：绿 / 琥珀 / 砖红，与"箱体三色"同源 */
+  --el-color-success: #2e8b6b;
+  --el-color-warning: #d9a441;
+  --el-color-danger: #c4553d;
 
-  --el-border-radius-base: 6px;
-  --el-border-radius-small: 4px;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 5px;
 
   /* 布局变量 */
   --sidebar-width: 228px;
   --sidebar-collapsed-width: 64px;
-  --sidebar-bg: #14263f;
-  --sidebar-bg-hover: #1d3557;
-  --sidebar-text: #a8b8cf;
+  --sidebar-bg: #0f2e24;
+  --sidebar-bg-hover: #1a4034;
+  --sidebar-text: #a3bdb3;
   --sidebar-text-active: #ffffff;
   --header-height: 56px;
-  --page-bg: #f2f5f9;
-  --card-radius: 10px;
+  --page-bg: #f4f3ee;
+  --card-radius: 12px;
 
   /* 'Noto Sans SC' 由 @fontsource 打包引入（见 main.ts），不依赖系统字体；
      'PingFang SC' / 'Microsoft YaHei' 仅作为 Mac / Windows 本地优先渲染。 */
-  --app-font: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --app-font:
+    'Inter', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial,
+    sans-serif;
 
   /* ============ 语义色（业务样式只准用这一层，不要再写 hex） ============
      原来散落在各页面的 66 个 hex 收敛到这里。
      改品牌去 brand.ts，改层次感只改这一层。 */
 
-  /* 文字四级：主 / 次 / 弱 / 最弱 */
-  --text-1: #2b3445;
-  --text-2: #51607a;
-  --text-3: #8a97ab;
-  --text-4: #a3aec0;
+  /* 文字四级：主 / 次 / 弱 / 最弱。带一点绿灰底，和墨绿主色同调 */
+  --text-1: #182420;
+  --text-2: #55615a;
+  --text-3: #86928b;
+  --text-4: #a3ada7;
 
   /* 品牌色衍生（主色本身走 --el-color-primary，由 brand.ts 注入） */
-  --brand-strong: #1d4485;
-  --brand-soft: #5d81bd;
-  --brand-tint: #eef3fb;
+  --brand-strong: #194a3b;
+  --brand-soft: #5f8b7d;
+  --brand-tint: #edf3f0;
 
-  /* 强调色衍生（琥珀） */
-  --accent-strong: #c97a1e;
-  --accent-text: #8a6d3b;
-  --accent-tint: #fdf6ee;
+  /* 强调色衍生（铜） */
+  --accent-strong: #a3622f;
+  --accent-text: #8a5426;
+  --accent-tint: #f8efe6;
 
   /* 状态色衍生 */
-  --success-text: #2f9e6e;
-  --success-tint: #e9f7f0;
-  --warning-text: #e07b1f;
-  --warning-tint: #fdf7ec;
-  --danger-text: #d9534f;
-  --danger-tint: #fdeaea;
+  --success-text: #2e8b6b;
+  --success-tint: #e6f3ed;
+  --warning-text: #ab7a24;
+  --warning-tint: #f9f2e3;
+  --danger-text: #c4553d;
+  --danger-tint: #fbe9e4;
 
-  /* 中性面与边框 */
+  /* 中性面与边框。用暖灰而不是冷灰 —— 冷灰配墨绿会"发脏" */
   --surface: #ffffff;
-  --surface-muted: #f5f8fc;
-  --surface-sunken: #eef1f6;
-  --border: #dbe3ee;
-  --border-soft: #e8edf4;
-  --border-strong: #c6d0de;
+  --surface-muted: #f7f7f3;
+  --surface-sunken: #efeee8;
+  --border: #dfddd4;
+  --border-soft: #ecebe4;
+  --border-strong: #c9c6ba;
 
-  /* 阴影只有两档：贴纸级 + 浮起级 */
-  --shadow-sm: 0 1px 2px rgba(20, 38, 63, 0.06);
-  --shadow-md: 0 4px 14px rgba(36, 86, 166, 0.4);
+  /* 阴影只有两档：贴纸级 + 浮起级。色调跟着主色走，不用纯黑 */
+  --shadow-sm: 0 1px 2px rgba(15, 46, 36, 0.07);
+  --shadow-md: 0 4px 14px rgba(15, 46, 36, 0.22);
 
   /* ============ 字号阶梯（原来 14 种，收敛到 9 档） ============
      小字号密集的企业后台，12 / 12.5 / 13 三档相邻是有必要的
      （辅助说明 / 次要信息 / 表格正文）。被砍掉的是 15px —— 与 14px
      只差 1px，属无意义细分。 */
-  --fs-2xs: 11px;     /* 角标、图表刻度 */
-  --fs-xs: 12px;      /* 辅助说明 */
-  --fs-sm: 12.5px;    /* 次要信息 */
-  --fs-base: 13px;    /* 表格正文 */
-  --fs-md: 14px;      /* 页面正文 */
-  --fs-lg: 18px;      /* 卡片标题 */
-  --fs-xl: 22px;      /* 关键指标 */
-  --fs-2xl: 24px;     /* 页面主标题 */
-  --fs-3xl: 28px;     /* 登录页标题 */
+  --fs-2xs: 11px; /* 角标、图表刻度 */
+  --fs-xs: 12px; /* 辅助说明 */
+  --fs-sm: 12.5px; /* 次要信息 */
+  --fs-base: 13px; /* 表格正文 */
+  --fs-md: 14px; /* 页面正文 */
+  --fs-lg: 18px; /* 卡片标题 */
+  --fs-xl: 22px; /* 关键指标 */
+  --fs-2xl: 24px; /* 页面主标题 */
+  --fs-3xl: 28px; /* 登录页标题 */
   --fs-display: 88px; /* 403 / 404 大数字 */
 
   /* ============ 圆角阶梯（原来 4/6/8/10/12/14 六种混用） ============
@@ -146,9 +156,18 @@ optgroup {
    政府/国企采购常有无障碍条款，这条能直接卡住验收。
    :focus-visible 只在键盘操作时命中，鼠标点击不会出现焦点环，不影响观感。 */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible,
-:where(.el-button, .el-select__wrapper, .el-textarea__inner,
-       .el-checkbox, .el-radio, .el-switch, .el-menu-item, .el-tabs__item,
-       .el-pagination button, .el-table__row):focus-visible {
+:where(
+  .el-button,
+  .el-select__wrapper,
+  .el-textarea__inner,
+  .el-checkbox,
+  .el-radio,
+  .el-switch,
+  .el-menu-item,
+  .el-tabs__item,
+  .el-pagination button,
+  .el-table__row
+):focus-visible {
   outline: 2px solid var(--brand-soft);
   outline-offset: 2px;
   border-radius: 4px;
@@ -247,7 +266,9 @@ optgroup {
 /* 路由切换过渡 */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .fade-slide-enter-from {

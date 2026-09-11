@@ -1,0 +1,179 @@
+/**
+ * 错误页共用样式（403 / 404）。
+ *
+ * 抽出来是因为两页除了文案和插画完全一样 —— 各写一份必然走形。
+ * 用 @use 引入，scoped 由调用方保证。
+ */
+
+.error-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--sidebar-bg);
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+/* ============ 背景货架墙 ============ */
+.wall {
+  position: absolute;
+  inset: -6%;
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 12px;
+  padding: 24px;
+  opacity: 0.55;
+}
+
+.crate {
+  position: relative;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+
+  i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+    border-radius: 0 0 6px 6px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: -12px;
+    right: -12px;
+    bottom: -6px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.09);
+    border-radius: 2px;
+  }
+
+  &.c-fast i {
+    background: linear-gradient(180deg, rgba(70, 188, 144, 0.55), rgba(44, 112, 89, 0.4));
+  }
+  &.c-slow i {
+    background: linear-gradient(180deg, rgba(239, 196, 108, 0.5), rgba(190, 141, 49, 0.35));
+  }
+  &.c-dead i {
+    background: linear-gradient(180deg, rgba(226, 128, 105, 0.5), rgba(162, 71, 52, 0.35));
+  }
+  &.c-empty i {
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.07) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+}
+
+/* 中心暗角：保证插画和文字能读，同时墙还看得见 */
+.error-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 50% 45%,
+    rgba(11, 35, 27, 0.35) 0%,
+    rgba(11, 35, 27, 0.93) 62%,
+    var(--sidebar-bg) 100%
+  );
+}
+
+/* ============ 内容 ============ */
+.inner {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 620px;
+  color: #fff;
+}
+
+:deep(.shelf-art) {
+  margin: 0 auto 34px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(201, 123, 74, 0.16);
+  color: #e9b57e;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  box-shadow: inset 0 0 0 1px rgba(201, 123, 74, 0.28);
+}
+
+h1 {
+  margin: 20px 0 0;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+p {
+  margin: 16px 0 0;
+  font-size: var(--fs-md);
+  line-height: 2;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.acts {
+  margin-top: 34px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  /* Element Plus 的默认按钮是白底，压在深色货架墙上会跳出来。
+     次要操作在深色语境里应该是"幽灵按钮"。 */
+  :deep(.el-button:not(.el-button--primary)) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+
+    &:hover,
+    &:focus {
+      background: rgba(255, 255, 255, 0.17);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #fff;
+    }
+  }
+}
+
+.path {
+  margin-top: 26px;
+  font-size: var(--fs-2xs);
+  color: rgba(255, 255, 255, 0.32);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  letter-spacing: 0.03em;
+  word-break: break-all;
+}
+
+@media (max-width: 640px) {
+  .wall {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  :deep(.shelf-art) {
+    width: 210px;
+    margin-bottom: 24px;
+  }
+}

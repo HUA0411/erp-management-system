@@ -13,23 +13,41 @@ export interface BrandConfig {
   logoTitle: string;
   /** 侧边栏副标题（未登录公司名时显示） */
   logoSub: string;
-  /** 主色（深蓝系，需 6 位 hex） */
+  /** 主色（深墨绿系，需 6 位 hex） */
   primaryColor: string;
-  /** 强调色（琥珀/橙色系） */
+  /** 强调色（铜色系） */
   accentColor: string;
   /** 侧边栏深色背景 */
   sidebarBg: string;
+  /** 登录页主标题第一行 */
+  loginHeadline: string;
+  /** 登录页主标题第二行（渲染成铜色，是这句话的落点） */
+  loginHeadlineAccent: string;
 }
 
+/**
+ * 视觉母题：**货架**。
+ *
+ * 整套配色和插画围绕一个意象 —— 货位高度 = 库存水位，
+ * 隔板虚线 = 安全库存，箱体颜色 = 周转速度。这个语言不只用在看板，
+ * 也用在登录页、错误页、空状态，以及 AI 提案卡。
+ *
+ * 选墨绿而不是蓝是有意的：蓝色后台在客户和 HR 眼里约等于"模板改的"，
+ * 墨绿 + 铜更接近仓储/工业的质感，也避开了 Element Plus 默认色。
+ *
+ * 换品牌只需要动这里 + 全局 token 层（styles/index.scss 顶部）。
+ */
 export const brand: BrandConfig = {
   appName: '企业 ERP 管理系统',
   loginSubtitle: '进销存 · 库存 · 财务 · 一体化经营管理平台',
   logoMark: 'E',
   logoTitle: '企业 ERP',
   logoSub: '进销存一体化',
-  primaryColor: '#2456a6',
-  accentColor: '#f2a33c',
-  sidebarBg: '#14263f',
+  primaryColor: '#1f5c4a',
+  accentColor: '#c97b4a',
+  sidebarBg: '#0f2e24',
+  loginHeadline: '每一箱货',
+  loginHeadlineAccent: '都看得见',
 };
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
