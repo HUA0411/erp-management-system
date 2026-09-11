@@ -23,8 +23,11 @@ export const aiProviderPresets: AiProviderPreset[] = [
     id: 'deepseek',
     name: 'DeepSeek 深度求索',
     baseUrl: 'https://api.deepseek.com/v1',
-    models: ['deepseek-chat', 'deepseek-reasoner'],
-    modelPlaceholder: '请填写完整模型名（如 deepseek-chat）',
+    // deepseek-chat / deepseek-reasoner 已不在 /v1/models 的返回里，
+    // 照着旧名字填会拿不到模型。这里以接口实际返回为准。
+    models: ['deepseek-flash', 'deepseek-v4-pro'],
+    modelPlaceholder: 'deepseek-flash',
+    hint: '对话用 deepseek-flash；需要长推理换 deepseek-v4-pro',
   },
   {
     id: 'zhipu',
