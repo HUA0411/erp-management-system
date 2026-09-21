@@ -152,7 +152,7 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
   };
 
   const getP002Qty = async (token: string): Promise<number> => {
-    const res = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=200'));
+    const res = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=100'));
     const row = res.body.data.list.find((i: { productId: number }) => i.productId === 2);
     return Number(row?.quantity ?? 0);
   };
@@ -332,6 +332,23 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
     expect(confirm.body.code).toBe(40037);
     expect(confirm.body.message).toContain('库存不足');
     expect(await getP002Qty(token)).toBe(before);
+
+    /**
+     * 关键回归：失败状态必须**真的落库**。
+     *
+     * 原实现是事务内先写 status='failed'，紧接着 throw —— 异常把整个事务回滚，
+     * 'failed' 一起被撤销，提案永远停在 pending：用户在「待确认」列表里反复看到同一条，
+     * 点多少次都是同样的报错，且没有任何失败痕迹。
+     * 所以这里不能只断言接口报错，一定要查库。
+     */
+    // 本套件的 beforeAll 清表后 destroy 过 dataSource，这里按需重建
+    if (!dataSource.isInitialized) await dataSource.initialize();
+    const rows: Array<{ status: string; result: string }> = await dataSource.query(
+      'SELECT status, result FROM ai_pending_action WHERE id = ?',
+      [pendingId],
+    );
+    expect(rows[0]?.status).toBe('failed');
+    expect(rows[0]?.result).toContain('库存不足');
   });
 
   it('对话历史：列表可查、消息可加载、跨用户隔离', async () => {

@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SaleOutboundsService } from './sale-outbounds.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { DateRangeQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 
 @ApiTags('销售出库单')
@@ -11,7 +11,7 @@ export class SaleOutboundsController {
 
   @Get()
   @RequirePermissions('sale:outbound:view')
-  list(@Query() query: PaginationDto & { startDate?: string; endDate?: string }) {
+  list(@Query() query: DateRangeQueryDto) {
     return this.outboundsService.list({
       page: query.page,
       pageSize: query.pageSize,

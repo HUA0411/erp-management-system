@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } 
 import { ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { ProductQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { LogsService } from '../logs/logs.service';
 
@@ -16,7 +16,7 @@ export class ProductsController {
 
   @Get()
   @RequirePermissions('product:view')
-  list(@Query() query: PaginationDto & { categoryId?: number; status?: number }) {
+  list(@Query() query: ProductQueryDto) {
     return this.productsService.list({
       page: query.page,
       pageSize: query.pageSize,
@@ -26,7 +26,14 @@ export class ProductsController {
     });
   }
 
+  /**
+   * 下拉选项。必须显式声明权限：
+   * PermissionsGuard 对**没有** @RequirePermissions 的接口直接放行（permissions.guard.ts:26），
+   * 所以漏写装饰器 = 任何登录用户都能拉全量数据。
+   * products/options 还会回传 purchasePrice（采购成本价），泄漏面更大。
+   */
   @Get('options')
+  @RequirePermissions('product:view')
   options(@Query('keyword') keyword?: string) {
     return this.productsService.options(keyword);
   }

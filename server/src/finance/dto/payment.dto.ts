@@ -1,5 +1,15 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import type { PartnerType, PaymentType } from '@erp/shared';
 
 export class CreatePaymentDto {
@@ -13,9 +23,14 @@ export class CreatePaymentDto {
   @IsInt()
   partnerId: number;
 
+  /**
+   * @Max 不能省：amount 列是 DECIMAL(12,2)，上限 9999999999.99。
+   * 只写 @Min 的话，传 1e12 会一路走到 MySQL 才报 1264 Out of range → 500。
+   */
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01, { message: '金额必须大于 0' })
+  @Max(9_999_999_999.99, { message: '金额超出上限' })
   amount: number;
 
   @IsOptional()

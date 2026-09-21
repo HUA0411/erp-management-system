@@ -105,53 +105,82 @@ export class PendingActionsService {
      *
      * 锁在事务内，崩溃会自动回滚，不会把提案卡在"执行中"的死状态。
      */
-    return this.dataSource.transaction(async (manager) => {
-      const locked = await manager.query<Array<{ id: number; status: string }>>(
-        'SELECT id, status FROM ai_pending_action WHERE id = ? AND company_id = ? AND user_id = ? FOR UPDATE',
-        [id, ctx.companyId, ctx.userId ?? -1],
-      );
-      const row = locked[0];
-      if (!row) throw new BusinessException('提案不存在', 40410);
-      if (row.status !== 'pending') {
-        // 并发情况下第二个请求会走到这里：锁释放后重新读到已变更的状态
-        throw new BusinessException('该提案已处理，请重新发起', 40034);
-      }
+    return this.dataSource
+      .transaction(async (manager) => {
+        const locked = await manager.query<Array<{ id: number; status: string }>>(
+          'SELECT id, status FROM ai_pending_action WHERE id = ? AND company_id = ? AND user_id = ? FOR UPDATE',
+          [id, ctx.companyId, ctx.userId ?? -1],
+        );
+        const row = locked[0];
+        if (!row) throw new BusinessException('提案不存在', 40410);
+        if (row.status !== 'pending') {
+          // 并发情况下第二个请求会走到这里：锁释放后重新读到已变更的状态
+          throw new BusinessException('该提案已处理，请重新发起', 40034);
+        }
 
-      const result = await this.registry.execute(pending.toolName, ctx, params, 'execute', permissionCodes);
+        const result = await this.registry.execute(pending.toolName, ctx, params, 'execute', permissionCodes);
 
-      if (result.type === 'error') {
+        if (result.type === 'error') {
+          /**
+           * 失败态必须**在事务内写、但不要在事务内抛**。
+           *
+           * 原写法是先用同一个 manager 写 status='failed'，紧接着 throw ——
+           * 异常让整个事务回滚，'failed' 一起被撤销，提案永远停在 pending：
+           * 用户在「待确认」里反复看到同一条，点多少次都是同样的错误，且没有任何失败痕迹。
+           *
+           * 但也不能在这手动 `COMMIT` —— TypeORM 的 transaction() 之后还会执行
+           * ROLLBACK，连接会进入异常状态。
+           * 正确做法：事务里把「失败」当成一个正常返回值写库并提交，
+           * 出了事务再抛异常，把错误信息带给调用方。
+           */
+          await manager.query(
+            'UPDATE ai_pending_action SET status = ?, result = ?, confirmed_at = NOW(6) WHERE id = ?',
+            ['failed', JSON.stringify({ error: result.message }), id],
+          );
+          return { failed: true as const, message: result.message };
+        }
+
+        const data = result.type === 'data' ? result.data : null;
         await manager.query(
           'UPDATE ai_pending_action SET status = ?, result = ?, confirmed_at = NOW(6) WHERE id = ?',
-          ['failed', JSON.stringify({ error: result.message }), id],
+          ['confirmed', JSON.stringify(data), id],
         );
-        throw new BusinessException(result.message, 40037);
-      }
-
-      const data = result.type === 'data' ? result.data : null;
-      await manager.query(
-        'UPDATE ai_pending_action SET status = ?, result = ?, confirmed_at = NOW(6) WHERE id = ?',
-        ['confirmed', JSON.stringify(data), id],
-      );
-      await this.logsService.record('AI助手', `执行 ${pending.toolName}`, {
-        pendingId: id,
-        result: data,
+        await this.logsService.record('AI助手', `执行 ${pending.toolName}`, {
+          pendingId: id,
+          result: data,
+        });
+        return {
+          failed: false as const,
+          ok: true,
+          message: '操作已执行',
+          toolName: pending.toolName,
+          preview: JSON.parse(pending.preview) as PreviewCard,
+          result: data,
+        };
+      })
+      .then((outcome) => {
+        if (outcome.failed) throw new BusinessException(outcome.message, 40037);
+        return outcome;
       });
-      return {
-        ok: true,
-        message: '操作已执行',
-        toolName: pending.toolName,
-        preview: JSON.parse(pending.preview) as PreviewCard,
-        result: data,
-      };
-    });
   }
 
+  /**
+   * 取消提案。必须用条件 UPDATE 抢占，不能「先查状态再无条件改」。
+   *
+   * 为什么：confirm 持有该行的排他锁直到事务提交。并发的 cancel 先读到快照
+   * status='pending' 通过校验，然后阻塞在 confirm 的行锁上，等 confirm 提交后
+   * 把 status 覆盖成 cancelled —— 结果就是动作**已经执行了**（库存已扣），
+   * 但审计记录显示「已取消」。条件 UPDATE 后这种情况 affectedRows = 0。
+   */
   async cancel(id: number, user: TenantContextData): Promise<{ ok: boolean }> {
-    const pending = await this.mustFindOwn(id, user);
-    if (pending.status !== 'pending') {
+    await this.mustFindOwn(id, user);
+    const result = await this.pendingRepo.update(
+      { id, companyId: user.companyId, userId: user.userId ?? -1, status: 'pending' },
+      { status: 'cancelled' },
+    );
+    if ((result.affected ?? 0) === 0) {
       throw new BusinessException('该提案已处理', 40038);
     }
-    await this.pendingRepo.update({ id }, { status: 'cancelled' });
     return { ok: true };
   }
 

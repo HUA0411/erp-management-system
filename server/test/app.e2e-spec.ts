@@ -64,7 +64,7 @@ describe('ERP API e2e（真实 MySQL）', () => {
     const token = demo.body.data.token;
 
     // 读取 P001 当前库存
-    const inv = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=200'));
+    const inv = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=100'));
     const before = Number(
       inv.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0,
     );
@@ -92,7 +92,7 @@ describe('ERP API e2e（真实 MySQL）', () => {
     expect(outbound.body.message).toContain('库存不足');
 
     // 库存不变
-    const inv2 = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=200'));
+    const inv2 = await auth(token)(request(app.getHttpServer()).get('/api/inventory?page=1&pageSize=100'));
     const after = Number(
       inv2.body.data.list.find((i: { productId: number }) => i.productId === 1)?.quantity ?? 0,
     );

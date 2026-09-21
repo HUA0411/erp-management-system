@@ -132,7 +132,19 @@ export class UsersService {
         status: data.status ?? user.status,
       },
     );
-    if (data.roleIds) await this.permissionService.setUserRoles(id, data.roleIds);
+    /**
+     * 授权同样要挡：允许把 SUPER_ADMIN 角色授给任意用户（包括自己），
+     * 等于任何持 system:user:update 的账号都能一步提权成超管。
+     * 非超管不得授予、也不得剥夺超管角色。
+     */
+    if (data.roleIds) {
+      const superRoleIds = await this.permissionService.superAdminRoleIds(companyId);
+      const touchesSuper = data.roleIds.some((rid) => superRoleIds.includes(rid));
+      if ((touchesSuper || user.isSuperAdmin) && !TenantContext.get()?.isSuperAdmin) {
+        throw new BusinessException('无权变更超级管理员角色', 40003);
+      }
+      await this.permissionService.setUserRoles(id, data.roleIds);
+    }
     return this.findOneItem(id);
   }
 
@@ -140,6 +152,15 @@ export class UsersService {
     const companyId = TenantContext.companyId;
     const user = await this.userRepo.findOne({ where: { id, companyId } });
     if (!user) throw new BusinessException('用户不存在', 40400);
+    /**
+     * 目标保护：同文件的停用（update）和删除（remove）都拦了超管，唯独重置密码漏了。
+     * 只持 system:user:reset-password 的普通租户管理员因此可以重置同租户超管的密码，
+     * 然后直接用超管账号登录拿到全部权限 —— 一条完整的提权链。
+     * 只有超管本人或另一个超管才允许重置超管的密码。
+     */
+    if (user.isSuperAdmin && !TenantContext.get()?.isSuperAdmin) {
+      throw new BusinessException('无权重置平台超级管理员的密码', 40003);
+    }
     // 管理员重置密码同样要吊销目标用户已签发的 token
     await this.userRepo.update({ id }, { password: bcrypt.hashSync(password, 10), pwdChangedAt: new Date() });
     this.logger.log(`password reset for user #${id}`);

@@ -9,6 +9,7 @@ import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import { formatDateTime, formatDate, nextNo, round2, sleep, todayLocal } from '../common/utils/no-generator';
+import { claimStatus } from '../common/utils/claim-status';
 import type { PageResult, SaleOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
@@ -140,9 +141,27 @@ export class SaleOrdersService {
       total = round2(prepared.lines.reduce((s, l) => s + l.amount, 0));
     }
 
+    /**
+     * 编辑也必须抢锁。原先的写法有两个并发问题：
+     *
+     * 1) `total` 取自事务外的快照。T1 换明细把 total 写成 200，
+     *    T2 在 T1 提交前也读到 100、且没传 items → 无条件 UPDATE 把 totalAmount 写回 100。
+     *    结果表头金额与明细汇总不一致，出库单又复制这个错值 → 应收全错。
+     * 2) 明细的 delete+insert 不带状态条件，T2 的编辑落在 T1 confirm 之后时，
+     *    会把一张已确认订单的明细整体删改。
+     *
+     * 现在事务内第一步先把订单行锁住并校验状态，全程持锁，两者都不会发生。
+     */
     await this.withNoRetry(async (manager) => {
+      const locked: Array<{ status: string }> = await manager.query(
+        'SELECT status FROM sale_order WHERE id = ? AND company_id = ? FOR UPDATE',
+        [id, companyId],
+      );
+      if (!locked.length) throw new BusinessException('订单不存在', 40404);
+      if (locked[0].status !== 'draft') throw new BusinessException('仅草稿状态的订单可编辑', 40029);
+
       await manager.getRepository(SaleOrderEntity).update(
-        { id },
+        { id, companyId },
         {
           customerId: customer?.id ?? order.customerId,
           customerName: customer?.name ?? order.customerName,
@@ -159,34 +178,59 @@ export class SaleOrdersService {
     return this.detail(id);
   }
 
+  /**
+   * 删除订单。必须用条件 DELETE 抢占草稿状态：
+   * 否则 T1 读到 draft 通过校验、T2 confirm 抢先提交，T1 再把已确认订单连明细物理删掉，
+   * 出库单的 order_id 就成了悬挂引用。
+   */
   async remove(id: number): Promise<void> {
-    const order = await this.mustFind(id);
-    if (order.status !== 'draft') throw new BusinessException('仅草稿状态的订单可删除', 40030);
+    const companyId = TenantContext.companyId;
+    await this.mustFind(id);
     await this.dataSource.transaction(async (manager) => {
+      const res = await manager.getRepository(SaleOrderEntity).delete({ id, companyId, status: 'draft' });
+      if ((res.affected ?? 0) === 0) {
+        throw new BusinessException('仅草稿状态的订单可删除', 40030);
+      }
       await manager.getRepository(SaleOrderItemEntity).delete({ orderId: id });
-      await manager.getRepository(SaleOrderEntity).delete({ id });
     });
   }
 
+  /**
+   * 确认 / 取消：状态流转必须在事务内用条件 UPDATE 抢占，
+   * 否则并发请求会读到同一个旧状态、双双通过校验、双双改状态。
+   * 详见 common/utils/claim-status.ts 的说明与实测数据。
+   */
   async confirm(id: number): Promise<void> {
-    const order = await this.mustFind(id);
-    if (order.status !== 'draft') throw new BusinessException('仅草稿状态可确认', 40031);
+    const companyId = TenantContext.companyId;
+    await this.mustFind(id);
     const count = await this.itemRepo.count({ where: { orderId: id } });
     if (!count) throw new BusinessException('订单没有明细，无法确认', 40032);
-    await this.orderRepo.update({ id }, { status: 'confirmed' });
+
+    const claimed = await this.dataSource.transaction((manager) =>
+      claimStatus(manager, SaleOrderEntity, { id, companyId }, 'draft', 'confirmed'),
+    );
+    if (!claimed) throw new BusinessException('仅草稿状态可确认', 40031);
   }
 
   async cancel(id: number): Promise<void> {
-    const order = await this.mustFind(id);
-    if (!['draft', 'confirmed'].includes(order.status)) {
-      throw new BusinessException('当前状态不可取消', 40033);
-    }
-    await this.orderRepo.update({ id }, { status: 'cancelled' });
+    const companyId = TenantContext.companyId;
+    await this.mustFind(id);
+
+    const claimed = await this.dataSource.transaction((manager) =>
+      claimStatus(manager, SaleOrderEntity, { id, companyId }, ['draft', 'confirmed'], 'cancelled'),
+    );
+    if (!claimed) throw new BusinessException('当前状态不可取消', 40033);
   }
 
   /**
-   * 销售出库（核心事务）：逐行 FOR UPDATE 锁库存并校验充足 → 扣减 → 生成出库单 → 写流水。
-   * 任一行库存不足则整体回滚，杜绝超卖。
+   * 销售出库（核心事务）：**先原子抢占订单状态**，再逐行 FOR UPDATE 锁库存并校验充足
+   * → 扣减 → 生成出库单 → 写流水。任一行库存不足则整体回滚，杜绝超卖。
+   *
+   * 抢占必须放在事务内的第一步：
+   * 事务外那次 `order.status !== 'confirmed'` 检查读的是快照，
+   * 5 个并发出库请求会全部通过它，然后各生成一张出库单、各扣一次库存（实测 75→50）。
+   * 改成条件 UPDATE 后，只有第一个请求能把 confirmed 改成 outbound，其余 affectedRows=0。
+   * 事务后续失败时状态随事务一起回滚，不会卡在中间态。
    */
   async outbound(id: number): Promise<{ outboundNo: string }> {
     const companyId = TenantContext.companyId;
@@ -198,6 +242,9 @@ export class SaleOrdersService {
     if (!items.length) throw new BusinessException('订单没有明细', 40035);
 
     return this.withNoRetry(async (manager) => {
+      const claimed = await claimStatus(manager, SaleOrderEntity, { id, companyId }, 'confirmed', 'outbound');
+      if (!claimed) throw new BusinessException('该订单已被处理，请刷新后重试', 40040);
+
       const outboundNo = await nextNo(manager, 'sale_outbound', 'outbound_no', companyId, 'OB');
       const outboundId = await manager
         .getRepository(SaleOutboundEntity)
@@ -227,9 +274,17 @@ export class SaleOrdersService {
         })),
       );
 
-      await manager.getRepository(SaleOrderEntity).update({ id }, { status: 'outbound' });
+      /**
+       * 按 productId 排序后再逐行加锁。
+       *
+       * movement() 每行都会 `SELECT ... FOR UPDATE`。如果两张订单的明细顺序相反
+       * （A：p1→p2，B：p2→p1），两个事务就会互相等对方的锁 → InnoDB 判定死锁 1213 回滚。
+       * 统一按 productId 升序加锁，所有事务的加锁顺序一致，环形等待不可能形成。
+       * 返回值与顺序无关（单号已在上面生成），所以排序不影响业务语义。
+       */
+      const lockedItems = [...items].sort((a, b) => a.productId - b.productId);
 
-      for (const item of items) {
+      for (const item of lockedItems) {
         await this.inventoryService.movement(manager, {
           companyId,
           productId: item.productId,

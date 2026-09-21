@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query } from '@n
 import { ApiTags } from '@nestjs/swagger';
 import { StocktakesService } from './stocktakes.service';
 import { CreateStocktakeDto } from './dto/stocktake.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { StatusTextQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { LogsService } from '../logs/logs.service';
 
@@ -16,7 +16,7 @@ export class StocktakesController {
 
   @Get()
   @RequirePermissions('inventory:stocktake:view')
-  list(@Query() query: PaginationDto & { status?: string }) {
+  list(@Query() query: StatusTextQueryDto) {
     return this.stocktakesService.list({
       page: query.page,
       pageSize: query.pageSize,

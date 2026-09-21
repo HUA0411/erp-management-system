@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PermissionService } from './permission.service';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 
 @ApiTags('权限')
@@ -17,10 +18,7 @@ export class PermissionController {
 
   @Put(':id')
   @RequirePermissions('system:permission:update')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: { name?: string; icon?: string; sort?: number; path?: string },
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: UpdatePermissionDto) {
     return this.permissionService.updatePermission(id, body);
   }
 }

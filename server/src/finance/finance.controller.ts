@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query } from 
 import { ApiTags } from '@nestjs/swagger';
 import { FinanceService } from './finance.service';
 import { CreatePaymentDto } from './dto/payment.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { PaymentQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { LogsService } from '../logs/logs.service';
 
@@ -18,7 +18,7 @@ export class FinanceController {
   @RequirePermissions('finance:payment:view')
   list(
     @Query()
-    query: PaginationDto & { type?: string; partnerType?: string; startDate?: string; endDate?: string },
+    query: PaymentQueryDto,
   ) {
     return this.financeService.list({
       page: query.page,

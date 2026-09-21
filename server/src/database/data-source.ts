@@ -72,6 +72,20 @@ export const dataSourceOptions: MysqlConnectionOptions = {
     supportBigNumbers: true,
     bigNumberStrings: false,
     connectionLimit: 20,
+    /**
+     * 排队上限：池子满时最多允许 50 个请求排队，第 51 个**立刻**收到错误。
+     *
+     * mysql2 的默认值是 `waitForConnections: true` + `queueLimit: 0`，
+     * 0 表示**无限排队**，而且 mysql2 3.x 已经没有 acquireTimeout 这个选项了
+     * （传了会被忽略并打印 "Ignoring invalid configuration option" 警告），
+     * 也就是说池子被占满后新请求会永远挂着：不报错、不返回、也不释放，只能重启进程。
+     * queueLimit 是目前唯一可用的兜底 —— 它不能让等待超时，但能让过量的请求快速失败。
+     *
+     * 真正会让池子占满的是「AI 提案确认」的嵌套事务写法：外层事务占 1 条连接，
+     * 工具内部又开一个事务再占 1 条，一个请求吃 2 条（见 pending-actions.service.ts）。
+     * 要根治得让工具接受外层传入的 manager，而不是各开各的事务。
+     */
+    queueLimit: 50,
   },
   logging: false,
   synchronize: false,

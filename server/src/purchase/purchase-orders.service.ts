@@ -9,6 +9,7 @@ import { InventoryService } from '../inventory/inventory.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
 import { formatDateTime, formatDate, nextNo, round2, sleep, todayLocal } from '../common/utils/no-generator';
+import { claimStatus } from '../common/utils/claim-status';
 import type { PageResult, PurchaseOrderItem } from '@erp/shared';
 
 export interface OrderLineInput {
@@ -198,25 +199,34 @@ export class PurchaseOrdersService {
   }
 
   async confirm(id: number): Promise<void> {
-    const order = await this.mustFind(id);
-    if (order.status !== 'draft') throw new BusinessException('仅草稿状态可确认', 40023);
+    const companyId = TenantContext.companyId;
+    await this.mustFind(id);
     const count = await this.itemRepo.count({ where: { orderId: id } });
     if (!count) throw new BusinessException('订单没有明细，无法确认', 40024);
-    await this.orderRepo.update({ id }, { status: 'confirmed' });
+
+    const claimed = await this.dataSource.transaction((manager) =>
+      claimStatus(manager, PurchaseOrderEntity, { id, companyId }, 'draft', 'confirmed'),
+    );
+    if (!claimed) throw new BusinessException('仅草稿状态可确认', 40023);
   }
 
   async cancel(id: number): Promise<void> {
-    const order = await this.mustFind(id);
-    if (!['draft', 'confirmed'].includes(order.status)) {
-      throw new BusinessException('当前状态不可取消', 40025);
-    }
-    await this.orderRepo.update({ id }, { status: 'cancelled' });
+    const companyId = TenantContext.companyId;
+    await this.mustFind(id);
+
+    const claimed = await this.dataSource.transaction((manager) =>
+      claimStatus(manager, PurchaseOrderEntity, { id, companyId }, ['draft', 'confirmed'], 'cancelled'),
+    );
+    if (!claimed) throw new BusinessException('当前状态不可取消', 40025);
   }
 
   /**
    * 采购入库（核心事务）：
-   * 生成入库单 + 明细 → 订单置为 warehoused → 逐行库存增加（FOR UPDATE）→ 写流水。
+   * **先原子抢占订单状态** → 生成入库单 + 明细 → 逐行库存增加（FOR UPDATE）→ 写流水。
    * 任一步失败整体回滚。
+   *
+   * 抢占放在事务内第一步的原因同销售出库：事务外读到的 status 是快照，
+   * 并发请求会全部通过校验，导致重复入库、库存被重复增加。
    */
   async warehouse(id: number): Promise<{ inboundNo: string }> {
     const companyId = TenantContext.companyId;
@@ -228,6 +238,15 @@ export class PurchaseOrdersService {
     if (!items.length) throw new BusinessException('订单没有明细', 40027);
 
     return this.withNoRetry(async (manager) => {
+      const claimed = await claimStatus(
+        manager,
+        PurchaseOrderEntity,
+        { id, companyId },
+        'confirmed',
+        'warehoused',
+      );
+      if (!claimed) throw new BusinessException('该订单已被处理，请刷新后重试', 40041);
+
       const inboundNo = await nextNo(manager, 'purchase_inbound', 'inbound_no', companyId, 'IB');
       const inboundId = await manager
         .getRepository(PurchaseInboundEntity)
@@ -257,9 +276,19 @@ export class PurchaseOrdersService {
         })),
       );
 
-      await manager.getRepository(PurchaseOrderEntity).update({ id }, { status: 'warehoused' });
+      // 订单状态已在事务开头由 claimStatus 置为 warehoused，这里不再重复 UPDATE
 
-      for (const item of items) {
+      /**
+       * 按 productId 排序后再逐行加锁。
+       *
+       * movement() 每行都会 `SELECT ... FOR UPDATE`。如果两张订单的明细顺序相反
+       * （A：p1→p2，B：p2→p1），两个事务就会互相等对方的锁 → InnoDB 判定死锁 1213 回滚。
+       * 统一按 productId 升序加锁，所有事务的加锁顺序一致，环形等待不可能形成。
+       * 返回值与顺序无关（单号已在上面生成），所以排序不影响业务语义。
+       */
+      const lockedItems = [...items].sort((a, b) => a.productId - b.productId);
+
+      for (const item of lockedItems) {
         await this.inventoryService.movement(manager, {
           companyId,
           productId: item.productId,

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } 
 import { ApiTags } from '@nestjs/swagger';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from './dto/purchase-order.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { StatusDateRangeQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { LogsService } from '../logs/logs.service';
 
@@ -16,7 +16,7 @@ export class PurchaseOrdersController {
 
   @Get()
   @RequirePermissions('purchase:order:view')
-  list(@Query() query: PaginationDto & { status?: string; startDate?: string; endDate?: string }) {
+  list(@Query() query: StatusDateRangeQueryDto) {
     return this.ordersService.list({
       page: query.page,
       pageSize: query.pageSize,

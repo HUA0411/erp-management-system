@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { MaxLength } from 'class-validator';
 import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Body } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { InventoryCurrentQueryDto, InventoryRecordQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { LogsService } from '../logs/logs.service';
 
@@ -17,8 +18,14 @@ class AdjustDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   delta: number;
 
+  /**
+   * 备注必须限长：inventory_record.remark 是 varchar(255)，
+   * 超长会在「库存已经改完、写流水时」才报 1406 Data too long，
+   * 整个事务回滚 → 该接口带长备注就永久 500。
+   */
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   remark?: string;
 }
 
@@ -32,7 +39,7 @@ export class InventoryController {
 
   @Get()
   @RequirePermissions('inventory:current:view')
-  current(@Query() query: PaginationDto & { lowOnly?: string }) {
+  current(@Query() query: InventoryCurrentQueryDto) {
     return this.inventoryService.current({
       page: query.page,
       pageSize: query.pageSize,
@@ -45,7 +52,7 @@ export class InventoryController {
   @RequirePermissions('inventory:record:view')
   records(
     @Query()
-    query: PaginationDto & { type?: string; startDate?: string; endDate?: string },
+    query: InventoryRecordQueryDto,
   ) {
     return this.inventoryService.records({
       page: query.page,

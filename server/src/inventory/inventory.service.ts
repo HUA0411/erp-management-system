@@ -125,11 +125,21 @@ export class InventoryService {
       qb.andWhere('i.quantity < p.safety_stock');
     }
 
+    /**
+     * 分页必须用 offset/limit，**不能用 skip/take**。
+     *
+     * TypeORM 的 skip/take 是「实体分页」：带 join 时它会改写成
+     * 「先 SELECT DISTINCT 主键 … LIMIT/OFFSET，再按主键查实体」两步，
+     * 而 `getRawMany()` 直接走单条 SQL，跳过了那套机制 —— take/skip 被**静默丢弃**。
+     * 实测：/products?page=1|2|3&pageSize=2 三次都返回全部 12 行、首行 id 都是 12，
+     * 也就是说列表的分页器是假的，翻页看到的永远是同一批数据（total 却是对的）。
+     * offset/limit 是直接拼进 SQL 的 LIMIT/OFFSET，不受 join 影响。
+     */
     const total = await qb.getCount();
     const rows = await qb
       .orderBy('p.id', 'DESC')
-      .skip((page - 1) * pageSize)
-      .take(pageSize)
+      .offset((page - 1) * pageSize)
+      .limit(pageSize)
       .getRawMany<Record<string, string | number | null>>();
 
     const list: InventoryItem[] = rows.map((r) => {

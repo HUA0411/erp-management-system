@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { PermissionEntity } from '../entities/permission.entity';
-import { RolePermissionEntity } from '../entities/role.entity';
+import { RoleEntity, RolePermissionEntity } from '../entities/role.entity';
 import { UserRoleEntity } from '../entities/role.entity';
 import { TenantContext } from '../tenant/tenant-context';
+import { BusinessException } from '../common/exceptions/business.exception';
 
 interface PermissionNode {
   id: number;
@@ -35,6 +36,10 @@ export class PermissionService {
     private readonly rolePermissionRepo: Repository<RolePermissionEntity>,
     @InjectRepository(UserRoleEntity)
     private readonly userRoleRepo: Repository<UserRoleEntity>,
+    @InjectRepository(RoleEntity)
+    private readonly roleRepo: Repository<RoleEntity>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   /** 查询用户拥有的全部权限码（角色→权限，去重） */
@@ -117,7 +122,20 @@ export class PermissionService {
   }
 
   /** 更新权限基本信息（名称/图标/排序/路由） */
+  /**
+   * 修改权限（菜单名 / 图标 / 排序 / 前端路由）。
+   *
+   * 权限表是**全局的** —— `sys_permission` 没有 company_id，所有租户共用同一套菜单定义。
+   * 而种子数据给每个租户的 SUPER_ADMIN 角色都授了 `system:permission:update`，
+   * 意味着任意一个租户的管理员都能改掉**所有租户**看到的菜单名称、图标和前端路由。
+   * 这不只是越权：改掉 `path` 还能把别的租户的用户导向任意前端路由。
+   *
+   * 所以这里再收一道 —— 只有平台超管（isSuperAdmin，跨租户运维账号）能改。
+   */
   async updatePermission(id: number, patch: Partial<PermissionEntity>): Promise<void> {
+    if (!TenantContext.get()?.isSuperAdmin) {
+      throw new BusinessException('权限定义是平台级配置，仅平台超级管理员可修改', 40007);
+    }
     await this.permissionRepo.update(
       { id },
       {
@@ -136,11 +154,43 @@ export class PermissionService {
     return rows.map((r) => r.permissionId);
   }
 
-  async setRolePermissions(roleId: number, permissionIds: number[]): Promise<void> {
-    await this.rolePermissionRepo.delete({ roleId });
-    if (permissionIds.length) {
-      await this.rolePermissionRepo.insert(permissionIds.map((permissionId) => ({ roleId, permissionId })));
+  /**
+   * 批量版：一次查回多个角色的权限，返回 roleId → permissionIds 映射。
+   * 角色列表页原先在循环里逐个 await 单角色版本，pageSize=100 就是 101 次查询。
+   */
+  async rolePermissionIdsBatch(roleIds: number[]): Promise<Map<number, number[]>> {
+    const map = new Map<number, number[]>();
+    if (!roleIds.length) return map;
+    const rows = await this.rolePermissionRepo.find({ where: { roleId: In(roleIds) } });
+    for (const r of rows) {
+      const list = map.get(r.roleId);
+      if (list) list.push(r.permissionId);
+      else map.set(r.roleId, [r.permissionId]);
     }
+    return map;
+  }
+
+  /** 当前租户里超管角色的 id 列表（用于授权时的提权防护） */
+  async superAdminRoleIds(companyId: number): Promise<number[]> {
+    const rows = await this.roleRepo.find({ where: { companyId, code: 'SUPER_ADMIN' } });
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * 「先 delete 再 insert」必须包在一个事务里。
+   * 两步是各自独立提交的：insert 阶段一旦失败（DB 抖动、字段超长、并发冲突），
+   * delete 已经落地，角色就变成**零权限**，所有关联用户当场失去全部访问权，
+   * 而且没有任何回滚路径。包进事务后要么全成、要么全不动。
+   */
+  async setRolePermissions(roleId: number, permissionIds: number[]): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(RolePermissionEntity).delete({ roleId });
+      if (permissionIds.length) {
+        await manager
+          .getRepository(RolePermissionEntity)
+          .insert(permissionIds.map((permissionId) => ({ roleId, permissionId })));
+      }
+    });
     const userIds = await this.userRoleRepo.find({ where: { roleId } });
     userIds.forEach((u) => this.invalidateUser(u.userId));
   }
@@ -150,11 +200,14 @@ export class PermissionService {
     return rows.map((r) => r.roleId);
   }
 
+  /** 同上：用户角色变更也必须原子，否则用户可能变成「无任何角色」 */
   async setUserRoles(userId: number, roleIds: number[]): Promise<void> {
-    await this.userRoleRepo.delete({ userId });
-    if (roleIds.length) {
-      await this.userRoleRepo.insert(roleIds.map((roleId) => ({ userId, roleId })));
-    }
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(UserRoleEntity).delete({ userId });
+      if (roleIds.length) {
+        await manager.getRepository(UserRoleEntity).insert(roleIds.map((roleId) => ({ userId, roleId })));
+      }
+    });
     this.invalidateUser(userId);
   }
 

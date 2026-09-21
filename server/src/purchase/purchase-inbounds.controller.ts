@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PurchaseInboundsService } from './purchase-inbounds.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { DateRangeQueryDto } from '../common/dto/pagination.dto';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 
 @ApiTags('采购入库单')
@@ -11,7 +11,7 @@ export class PurchaseInboundsController {
 
   @Get()
   @RequirePermissions('purchase:inbound:view')
-  list(@Query() query: PaginationDto & { startDate?: string; endDate?: string }) {
+  list(@Query() query: DateRangeQueryDto) {
     return this.inboundsService.list({
       page: query.page,
       pageSize: query.pageSize,

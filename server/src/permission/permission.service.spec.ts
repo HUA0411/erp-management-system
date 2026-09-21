@@ -54,10 +54,26 @@ describe('PermissionService（权限聚合 / 菜单树 / 缓存）', () => {
     };
     const userRoleRepo = { find: jest.fn().mockResolvedValue([]), delete: jest.fn(), insert: jest.fn() };
 
+    const roleRepo = { find: jest.fn().mockResolvedValue([]) };
+    // setRolePermissions / setUserRoles 的「先 delete 再 insert」包在事务里，
+    // 这里给一个直接把回调跑一遍的假 DataSource
+    const dataSource = {
+      transaction: jest.fn(async (fn: (m: unknown) => Promise<unknown>) =>
+        fn({
+          getRepository: () => ({
+            delete: jest.fn(),
+            insert: jest.fn(),
+          }),
+        }),
+      ),
+    };
+
     const svc = new PermissionService(
       permissionRepo as never,
       rolePermissionRepo as never,
       userRoleRepo as never,
+      roleRepo as never,
+      dataSource as never,
     );
     return { svc, permissionRepo, captured, joinCalls: () => joinCalls };
   }

@@ -234,8 +234,25 @@ export class SaleAgentTools implements OnModuleInit {
           const productId = Number(row.productId);
           const quantity = Number(row.quantity);
           if (!Number.isFinite(productId) || productId <= 0) throw new BusinessException('商品ID无效');
+          /**
+           * AI 工具直接调 service，绕过了 DTO 的校验，所以边界必须在这里自己守。
+           *
+           * 不守的后果（DECIMAL(12,2) 上限 9999999999.99）：
+           *  - quantity/price 给到 1e9 → amount 溢出 → MySQL 1264 → 事务内 500；
+           *  - quantity 给 0.004 → 金额按 0.004 算成 4.00，而 quantity 列被舍入成 0.00，
+           *    明细出现「数量 0.00 / 金额 4.00」，订单总额和数量×单价对不上账。
+           * 上限与 DTO 保持一致：数量 ≤ 999999，单价 ≤ 9999999。
+           */
           if (!Number.isFinite(quantity) || quantity <= 0) throw new BusinessException('销售数量必须大于 0');
+          if (quantity > 999_999) throw new BusinessException('销售数量超出上限（999999）');
+          if (Math.round(quantity * 100) !== quantity * 100)
+            throw new BusinessException('销售数量最多两位小数');
           const price = row.price == null || row.price === '' ? undefined : Number(row.price);
+          if (price !== undefined) {
+            if (!Number.isFinite(price) || price < 0) throw new BusinessException('单价不合法');
+            if (price > 9_999_999) throw new BusinessException('单价超出上限（9999999）');
+            if (Math.round(price * 100) !== price * 100) throw new BusinessException('单价最多两位小数');
+          }
           return { productId, quantity, price };
         });
 

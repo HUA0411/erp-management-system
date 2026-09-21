@@ -41,9 +41,16 @@ export class RolesService {
       .take(pageSize)
       .getManyAndCount();
 
+    /**
+     * 一次性把所有角色的权限查出来，不要在循环里逐个 await。
+     * 原写法 pageSize=100 时会产生 101 次查询（1 次列表 + 100 次权限），
+     * 每次都是一个 round trip —— 角色页加载慢的直接原因。
+     */
+    const permMap = await this.permissionService.rolePermissionIdsBatch(rows.map((r) => r.id));
+
     const list: RoleWithPermissions[] = [];
     for (const r of rows) {
-      const permissionIds = await this.permissionService.rolePermissionIds(r.id);
+      const permissionIds = permMap.get(r.id) ?? [];
       list.push({
         id: r.id,
         name: r.name,

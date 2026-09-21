@@ -24,7 +24,14 @@ export class RolesController {
     });
   }
 
+  /**
+   * 下拉选项。必须显式声明权限：
+   * PermissionsGuard 对**没有** @RequirePermissions 的接口直接放行（permissions.guard.ts:26），
+   * 所以漏写装饰器 = 任何登录用户都能拉全量数据。
+   * products/options 还会回传 purchasePrice（采购成本价），泄漏面更大。
+   */
   @Get('options')
+  @RequirePermissions('system:role:view')
   allOptions() {
     return this.rolesService.allOptions();
   }
