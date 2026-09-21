@@ -7,7 +7,7 @@ import { PurchaseOrderEntity } from '../entities/purchase.entity';
 import { SaleOrderEntity } from '../entities/sale.entity';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { TenantContext } from '../tenant/tenant-context';
-import { formatDateTime, formatDate, nextNo } from '../common/utils/no-generator';
+import { formatDateTime, formatDate, nextNo, sleep } from '../common/utils/no-generator';
 import type { AccountSummary, PageResult, PartnerType, PaymentItem, PaymentType } from '@erp/shared';
 
 export interface PaymentQuery {
@@ -85,8 +85,26 @@ export class FinanceService {
     payDate: string;
     method?: string;
     remark?: string;
+    requestId?: string;
   }): Promise<PaymentEntity> {
     const companyId = TenantContext.companyId;
+
+    /**
+     * 幂等：带 requestId 的重复提交直接返回首次创建的那条。
+     *
+     * 典型触发场景是「双击提交」「请求超时后用户又点一次」——
+     * 这两次请求的业务意图只有一个，绝不能落两条单。
+     * `(company_id, doc_no)` 唯一索引在这件事上完全帮不上忙：docNo 是服务端每次
+     * 现取的序号，两次请求必然不同号，两张单都会成功写入，往来账直接翻倍。
+     */
+    if (data.requestId) {
+      const existed = await this.paymentRepo.findOne({ where: { companyId, requestId: data.requestId } });
+      if (existed) {
+        this.logger.log(`payment replay ignored: requestId=${data.requestId} docNo=${existed.docNo}`);
+        return existed;
+      }
+    }
+
     let partnerName = '';
     if (data.partnerType === 'supplier') {
       const s = await this.supplierRepo.findOne({ where: { id: data.partnerId, companyId } });
@@ -106,26 +124,58 @@ export class FinanceService {
      * 与财务模块按往来单位汇总的口径对不上账。
      * （实测：47 张订单 paidAmount 全是 0，而 payment 表里有挂 order_no 的收款记录。）
      */
-    const entity = await this.dataSource.transaction(async (manager) => {
-      const docNo = await nextNo(manager, 'payment', 'doc_no', companyId, 'PAY');
-      const saved = await manager.getRepository(PaymentEntity).insert({
-        companyId,
-        docNo,
-        type: data.type,
-        partnerType: data.partnerType,
-        partnerId: data.partnerId,
-        partnerName,
-        amount: data.amount,
-        orderNo: data.orderNo,
-        payDate: data.payDate,
-        method: data.method,
-        remark: data.remark,
-        createdBy: TenantContext.userId,
+    let entity: PaymentEntity;
+    try {
+      entity = await this.dataSource.transaction(async (manager) => {
+        const docNo = await nextNo(manager, 'payment', 'doc_no', companyId, 'PAY');
+        const saved = await manager.getRepository(PaymentEntity).insert({
+          companyId,
+          docNo,
+          type: data.type,
+          partnerType: data.partnerType,
+          partnerId: data.partnerId,
+          partnerName,
+          amount: data.amount,
+          orderNo: data.orderNo,
+          // 幂等键必须一起落库，否则唯一索引上全是 NULL，去重完全失效
+          requestId: data.requestId,
+          payDate: data.payDate,
+          method: data.method,
+          remark: data.remark,
+          createdBy: TenantContext.userId,
+        });
+        if (data.orderNo) await this.syncPaidAmount(manager, companyId, data.orderNo);
+        this.logger.log(`payment created: ${docNo}`);
+        return manager
+          .getRepository(PaymentEntity)
+          .findOneByOrFail({ id: saved.identifiers[0].id as number });
       });
-      if (data.orderNo) await this.syncPaidAmount(manager, companyId, data.orderNo);
-      this.logger.log(`payment created: ${docNo}`);
-      return manager.getRepository(PaymentEntity).findOneByOrFail({ id: saved.identifiers[0].id as number });
-    });
+    } catch (err) {
+      /**
+       * 真正的并发由唯一索引兜底。
+       *
+       * 两个请求同时通过了上面的存在性检查（都在对方提交前读的），
+       * 于是都去 INSERT —— 后到的那个吃 1062 ER_DUP_ENTRY。
+       * 这里把它转成「返回首次创建的那条」，对调用方而言仍然是幂等成功，
+       * 而不是一个看不懂的 500。并发写同一唯一键还可能撞上死锁(1213)/
+       * 锁等待超时(1205)，一并按同样方式处理。
+       */
+      const errno = (err as { errno?: number })?.errno;
+      if (data.requestId && (errno === 1062 || errno === 1213 || errno === 1205)) {
+        // 稍微等一下胜出的那个事务提交，再读一次
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const existed = await this.paymentRepo.findOne({
+            where: { companyId, requestId: data.requestId },
+          });
+          if (existed) {
+            this.logger.log(`payment concurrent duplicate resolved: requestId=${data.requestId}`);
+            return existed;
+          }
+          await sleep(20 * (attempt + 1));
+        }
+      }
+      throw err;
+    }
     return entity;
   }
 

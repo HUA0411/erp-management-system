@@ -113,6 +113,11 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
         call('c6', 'adjust_stock', '{"productId":2,"delta":-99999999}'),
         { content: '已生成库存调整提案，请点击确定执行。', toolCalls: [] },
       ],
+      // 用例12：并发确认同一提案（+5，用来验证只执行一次）
+      [
+        call('c7', 'adjust_stock', '{"productId":2,"delta":5,"remark":"并发确认测试"}'),
+        { content: '已生成库存调整提案，请点击确定执行。', toolCalls: [] },
+      ],
     ]);
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -350,6 +355,39 @@ describe('AI 助手 e2e（真实 MySQL + FakeLlmClient）', () => {
     expect(rows[0]?.status).toBe('failed');
     expect(rows[0]?.result).toContain('库存不足');
   });
+
+  it('并发确认同一提案：只执行一次（抢占 + 租约，不再用嵌套事务）', async () => {
+    const demo = await login('DEMO', 'admin', '123456');
+    const token = demo.body.data.token;
+    const before = await getP002Qty(token);
+
+    const events = await chatEvents(token, { message: '给商品补充库存' });
+    const cardEvent = events.find((e) => e.type === 'card') as { card?: { pendingId?: number } };
+    const pendingId = cardEvent.card?.pendingId as number;
+
+    // 5 个并发确认 —— 修复前用的是「外层事务 + 工具内层事务」（两条连接两个独立事务），
+    // 并且一个请求占 2 条连接。现在改成一条原子 UPDATE 抢占，只有一个能改成 executing。
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        auth(token)(request(app.getHttpServer()).post(`/api/ai-agent/pending/${pendingId}/confirm`)),
+      ),
+    );
+    const okCount = results.filter((r) => r.body?.code === 0).length;
+    expect(okCount).toBe(1);
+    expect(results.filter((r) => r.body?.code !== 0).every((r) => r.body.code === 40034)).toBe(true);
+
+    // 库存只能 +5 一次
+    expect(await getP002Qty(token)).toBe(before + 5);
+
+    if (!dataSource.isInitialized) await dataSource.initialize();
+    const rows: Array<{ status: string; claimed_at: Date | null }> = await dataSource.query(
+      'SELECT status, claimed_at FROM ai_pending_action WHERE id = ?',
+      [pendingId],
+    );
+    expect(rows[0].status).toBe('confirmed');
+    // 抢占时间戳留作审计：能看出这条提案是什么时候被哪个请求抢走的
+    expect(rows[0].claimed_at).not.toBeNull();
+  }, 60000);
 
   it('对话历史：列表可查、消息可加载、跨用户隔离', async () => {
     const demo = await login('DEMO', 'admin', '123456');

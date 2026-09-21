@@ -217,4 +217,177 @@ describe('接口契约与权限矩阵 e2e（真实 MySQL）', () => {
       expect(missing).toEqual([]);
     });
   });
+
+  // ───────────────────────────────────── 5. 收付款幂等
+  describe('收付款登记幂等（防双击重复登记）', () => {
+    let token: string;
+    let partnerId: number;
+
+    const newRequestId = () => `test-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+    beforeAll(async () => {
+      token = await login('admin');
+      const c = await auth(token)(http().get('/api/customers/options'));
+      partnerId = c.body.data[0].id;
+    });
+
+    const payload = (requestId: string) => ({
+      type: 'receive',
+      partnerType: 'customer',
+      partnerId,
+      amount: 12.34,
+      payDate: '2026-09-21',
+      method: '银行转账',
+      remark: 'IDEMPOTENCY-E2E',
+      requestId,
+    });
+
+    const cleanup = () => dataSource.query("DELETE FROM payment WHERE remark = 'IDEMPOTENCY-E2E'");
+    beforeEach(cleanup);
+    afterAll(cleanup);
+
+    it('同一个 requestId 提交 5 次只落一条单，且 docNo 相同', async () => {
+      const rid = newRequestId();
+      const results = await Promise.all(
+        Array.from({ length: 5 }, () => auth(token)(http().post('/api/payments').send(payload(rid)))),
+      );
+      expect(results.filter((r) => !isOk(r)).map((r) => JSON.stringify(r.body))).toEqual([]);
+      expect(results.every(isOk)).toBe(true);
+
+      const docNos = new Set(results.map((r) => r.body.data.docNo));
+      expect(docNos.size).toBe(1);
+
+      const rows: Array<{ n: number }> = await dataSource.query(
+        'SELECT COUNT(*) AS n FROM payment WHERE remark = ?',
+        ['IDEMPOTENCY-E2E'],
+      );
+      // 修复前这里是 5 —— 往来账直接翻 5 倍
+      expect(Number(rows[0].n)).toBe(1);
+    });
+
+    it('串行重复提交（请求超时后用户再点一次）同样只落一条', async () => {
+      const rid = newRequestId();
+      const first = await auth(token)(http().post('/api/payments').send(payload(rid)));
+      const second = await auth(token)(http().post('/api/payments').send(payload(rid)));
+      expect(isOk(first)).toBe(true);
+      expect(isOk(second)).toBe(true);
+      expect(second.body.data.id).toBe(first.body.data.id);
+
+      const rows: Array<{ n: number }> = await dataSource.query(
+        'SELECT COUNT(*) AS n FROM payment WHERE remark = ?',
+        ['IDEMPOTENCY-E2E'],
+      );
+      expect(Number(rows[0].n)).toBe(1);
+    });
+
+    it('不同 requestId 是两笔独立业务，正常各落一条', async () => {
+      await auth(token)(http().post('/api/payments').send(payload(newRequestId())));
+      await auth(token)(http().post('/api/payments').send(payload(newRequestId())));
+      const rows: Array<{ n: number }> = await dataSource.query(
+        'SELECT COUNT(*) AS n FROM payment WHERE remark = ?',
+        ['IDEMPOTENCY-E2E'],
+      );
+      expect(Number(rows[0].n)).toBe(2);
+    });
+
+    it('不带 requestId 时保持原行为（AI 工具等调用方不受影响）', async () => {
+      const body = payload('');
+      delete (body as Record<string, unknown>).requestId;
+      const res = await auth(token)(http().post('/api/payments').send(body));
+      expect(isOk(res)).toBe(true);
+      const rows: Array<{ n: number }> = await dataSource.query(
+        'SELECT COUNT(*) AS n FROM payment WHERE remark = ?',
+        ['IDEMPOTENCY-E2E'],
+      );
+      expect(Number(rows[0].n)).toBe(1);
+    });
+
+    it('数据库唯一索引存在（应用层判断失误时兜底）', async () => {
+      const rows: Array<{ n: number }> = await dataSource.query(
+        `SELECT COUNT(*) AS n FROM information_schema.statistics
+         WHERE table_schema = DATABASE() AND table_name = 'payment' AND index_name = 'uk_payment_request'`,
+      );
+      expect(Number(rows[0].n)).toBeGreaterThan(0);
+    });
+  });
+
+  // ───────────────────────────────────── 6. 收付款回写订单已收金额
+  describe('收付款回写订单已收/已付', () => {
+    let token: string;
+    let customerId: number;
+    let productId: number;
+
+    const cleanup = async () => {
+      await dataSource.query("DELETE FROM payment WHERE remark = 'PAID-SYNC-E2E'");
+      await dataSource.query(
+        "DELETE FROM sale_order_item WHERE order_id IN (SELECT id FROM sale_order WHERE remark = 'PAID-SYNC-E2E')",
+      );
+      await dataSource.query("DELETE FROM sale_order WHERE remark = 'PAID-SYNC-E2E'");
+    };
+
+    beforeAll(async () => {
+      token = await login('admin');
+      const c = await auth(token)(http().get('/api/customers?page=1&pageSize=1'));
+      customerId = c.body.data.list[0].id;
+      const p = await auth(token)(http().get('/api/products?page=1&pageSize=1'));
+      productId = p.body.data.list[0].id;
+    });
+    beforeEach(cleanup);
+    afterAll(cleanup);
+
+    it('登记收款后订单 paid_amount 被回写；删除收款后又归零', async () => {
+      const order = await auth(token)(http().post('/api/sale-orders')).send({
+        customerId,
+        orderDate: '2026-09-21',
+        remark: 'PAID-SYNC-E2E',
+        items: [{ productId, quantity: 1, price: 100 }],
+      });
+      const orderNo = order.body.data.orderNo as string;
+
+      // 修复前 paid_amount 永远是 0 —— 全代码库没有任何写它的路径
+      let rows: Array<{ paid_amount: string }> = await dataSource.query(
+        'SELECT paid_amount FROM sale_order WHERE order_no = ?',
+        [orderNo],
+      );
+      expect(Number(rows[0].paid_amount)).toBe(0);
+
+      const pay = await auth(token)(http().post('/api/payments')).send({
+        type: 'receive',
+        partnerType: 'customer',
+        partnerId: customerId,
+        amount: 60,
+        orderNo,
+        payDate: '2026-09-21',
+        method: '银行转账',
+        remark: 'PAID-SYNC-E2E',
+      });
+      expect(isOk(pay)).toBe(true);
+
+      rows = await dataSource.query('SELECT paid_amount FROM sale_order WHERE order_no = ?', [orderNo]);
+      expect(Number(rows[0].paid_amount)).toBe(60);
+
+      // 再收 40，累计到 100（按 order_no 求和后整体赋值，不是累加）
+      await auth(token)(http().post('/api/payments')).send({
+        type: 'receive',
+        partnerType: 'customer',
+        partnerId: customerId,
+        amount: 40,
+        orderNo,
+        payDate: '2026-09-21',
+        method: '银行转账',
+        remark: 'PAID-SYNC-E2E',
+      });
+      rows = await dataSource.query('SELECT paid_amount FROM sale_order WHERE order_no = ?', [orderNo]);
+      expect(Number(rows[0].paid_amount)).toBe(100);
+
+      // 删掉其中一笔，金额自动回到正确值
+      const list = await auth(token)(http().get('/api/payments?page=1&pageSize=100'));
+      const target = (list.body.data.list as Array<{ id: number; orderNo: string; amount: number }>).find(
+        (p) => p.orderNo === orderNo && Number(p.amount) === 40,
+      );
+      await auth(token)(http().delete(`/api/payments/${target!.id}`));
+      rows = await dataSource.query('SELECT paid_amount FROM sale_order WHERE order_no = ?', [orderNo]);
+      expect(Number(rows[0].paid_amount)).toBe(60);
+    }, 60000);
+  });
 });

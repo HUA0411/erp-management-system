@@ -32,6 +32,17 @@ export class UserEntity extends TenantBaseEntity {
   @Column({ type: 'datetime', precision: 6, nullable: true, comment: '密码最后修改时间，用于吊销旧 JWT' })
   pwdChangedAt: Date | null;
 
+  /**
+   * 连续登录失败次数。达到阈值即锁定账号，成功登录后清零。
+   * 放在数据库而不是进程内存里：PM2 集群下每个进程各有一份内存计数器，
+   * 那样实际放行量会变成「限制 × 进程数」，锁定形同虚设。
+   */
+  @Column({ type: 'int', default: 0, comment: '连续登录失败次数' })
+  failedAttempts: number;
+
+  @Column({ type: 'datetime', nullable: true, comment: '锁定截止时间' })
+  lockedUntil: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

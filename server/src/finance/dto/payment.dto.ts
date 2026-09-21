@@ -38,6 +38,15 @@ export class CreatePaymentDto {
   @MaxLength(32)
   orderNo?: string;
 
+  /**
+   * 幂等键，由客户端在打开登记弹窗时生成（一次填写 = 一个键）。
+   * 同一个键重复提交只会产生一条单据，接口返回首次创建的那条。
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  requestId?: string;
+
   @IsDateString({}, { message: '日期格式不正确' })
   payDate: string;
 

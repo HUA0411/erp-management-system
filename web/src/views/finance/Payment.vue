@@ -139,6 +139,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
 import { customerApi, financeApi, supplierApi } from '@/api';
 import EmptyState from '@/components/EmptyState.vue';
+import { newRequestId } from '@/utils/idempotency';
 import { fmtMoney, PAYMENT_TYPE, today } from '@/utils';
 import type { PaymentItem } from '@erp/shared';
 
@@ -152,6 +153,8 @@ const query = reactive({ page: 1, pageSize: 10, type: '', keyword: '' });
 
 const dialogVisible = ref(false);
 const saving = ref(false);
+/** 提交幂等键：防止双击「确定」或网络重试登记出两张单 */
+const requestId = ref<string | undefined>(undefined);
 const formRef = ref<FormInstance>();
 const form = reactive<Record<string, any>>({});
 const rules: FormRules = {
@@ -182,6 +185,11 @@ async function load() {
 }
 
 async function openCreate() {
+  /**
+   * 幂等键：一次「填写 + 提交」用一个键，双击确定、网络重试都算同一次业务意图。
+   * 打开弹窗时生成，提交成功后作废（下次打开重新生成）。
+   */
+  requestId.value = newRequestId();
   const [s, c] = await Promise.all([supplierApi.options(), customerApi.options()]);
   suppliers.value = s;
   customers.value = c;
@@ -210,9 +218,12 @@ async function save() {
       payDate: form.payDate,
       method: form.method,
       remark: form.remark,
+      requestId: requestId.value,
     });
     ElMessage.success('登记成功');
     dialogVisible.value = false;
+    // 这一单已经完成，作废幂等键，避免下一次登记被当成重复提交
+    requestId.value = undefined;
     load();
   } finally {
     saving.value = false;

@@ -15,7 +15,7 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
     "seed": "ts-node src/seed/seed-runner.ts",
     "test": "jest",
-    "test:e2e": "DB_DATABASE=erp_system_test LOGIN_THROTTLE_LIMIT=1000 THROTTLE_LIMIT=100000 jest --config ./test/jest-e2e.json",
+    "test:e2e": "DB_DATABASE=erp_system_test LOGIN_THROTTLE_LIMIT=1000 THROTTLE_LIMIT=100000 jest --config ./test/jest-e2e.json --forceExit",
     "test:e2e:init": "DB_DATABASE=erp_system_test npm run db:create && DB_DATABASE=erp_system_test npm run migration:run && DB_DATABASE=erp_system_test npm run seed"
   },
   "dependencies": {

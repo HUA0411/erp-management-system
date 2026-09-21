@@ -8,6 +8,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { join } from 'node:path';
+import { DataSource } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -32,6 +34,49 @@ function assertJwtSecret(): void {
   if (secret.length < 32) {
     console.error(`[启动中止] JWT_SECRET 长度仅 ${secret.length}，至少需要 32 位随机字符。`);
     process.exit(1);
+  }
+}
+
+/**
+ * 启动时检查是否还有账号在用演示默认密码 `123456`。
+ *
+ * 种子数据里的 7 个演示账号（admin / zhangsan / lisi / wangwu / zhaoliu / t2admin / t2sales）
+ * 密码全是 123456，其中 admin 和 t2admin 还带平台超管权限。
+ * 这些账号是演示和作品集展示用的，**直接上线公网等于给系统装了一扇不锁的门**。
+ *
+ * 这里只**提醒**，不阻断启动、也不自动改密码 —— 自动改会把演示环境的账号弄失效，
+ * 而阻断启动会让「先跑起来看看」的首次部署直接卡住。真正的强制手段是把
+ * docs/部署指南.md 的「必须修改演示账号」做成上线检查项。
+ *
+ * 检测方式是对预置密码做一次 bcrypt 比对（不需要知道明文以外的任何信息），
+ * 库里查不到这些用户名就直接跳过。
+ */
+async function warnDefaultPasswords(dataSource: DataSource): Promise<void> {
+  const DEFAULT_PASSWORD = '123456';
+  const SEEDED = ['admin', 't2admin', 'zhangsan', 'lisi', 'wangwu', 'zhaoliu', 't2sales'];
+
+  try {
+    const rows: Array<{ username: string; password: string; is_super_admin: number }> =
+      await dataSource.query(
+        `SELECT username, password, is_super_admin FROM sys_user
+         WHERE username IN (${SEEDED.map(() => '?').join(',')}) AND status = 1`,
+        SEEDED,
+      );
+    const stillDefault = rows.filter((r) => bcrypt.compareSync(DEFAULT_PASSWORD, r.password));
+    if (!stillDefault.length) return;
+
+    const names = stillDefault.map((r) => (r.is_super_admin ? `${r.username}(超管)` : r.username)).join('、');
+    const logger = new Logger('安全提醒');
+    logger.warn(`检测到 ${stillDefault.length} 个演示账号仍在使用默认密码 123456：${names}`);
+    logger.warn('这些账号可以登录并操作全部数据。上线前请务必修改，做法见 docs/部署指南.md');
+    if (process.env.NODE_ENV === 'production') {
+      logger.error(
+        '当前是生产环境（NODE_ENV=production）却仍然保留默认密码 —— 这是一条直通后门，请立即修改。',
+      );
+    }
+  } catch (err) {
+    // 检查失败不影响启动，只是少一条提醒
+    new Logger('安全提醒').debug(`默认密码检查跳过: ${(err as Error).message}`);
   }
 }
 
@@ -131,6 +176,9 @@ async function bootstrap(): Promise<void> {
 
   const port = parseInt(process.env.PORT || '3000', 10);
   await app.listen(port);
+
+  // 启动后顺手检查演示账号是否还在用默认密码
+  await warnDefaultPasswords(app.get(DataSource));
   logger.log(`API 服务已启动: http://localhost:${port}/api`);
   if (!isProd) logger.log(`Swagger 文档: http://localhost:${port}/api/docs`);
   logger.log(`CORS 允许来源: ${corsOrigins.join(', ')}`);

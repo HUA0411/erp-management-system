@@ -20,6 +20,8 @@ describe('AuthService', () => {
       andWhere: jest.fn().mockReturnThis(),
       getOne: jest.fn().mockResolvedValue(user ?? null),
     })),
+    // 登录失败要记一次失败次数、成功要清零，都会调 update
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
   });
 
   function build(user: Parameters<typeof makeUserRepo>[0]) {
@@ -54,7 +56,7 @@ describe('AuthService', () => {
     expect(result.user.companyCode).toBe('DEMO');
   });
 
-  it('密码错误抛出业务异常 40102', async () => {
+  it('密码错误返回统一的 40101（不再用 40102 区分失败原因）', async () => {
     const svc = build({
       id: 1,
       companyId: 1,
@@ -64,7 +66,7 @@ describe('AuthService', () => {
       isSuperAdmin: false,
     });
     await expect(svc.login('DEMO', 'admin', 'wrong-password')).rejects.toMatchObject({
-      response: { code: 40102 },
+      response: { code: 40101 },
     });
   });
 
@@ -87,13 +89,32 @@ describe('AuthService', () => {
     });
   });
 
-  it('用户不存在与密码错误返回同一提示（防枚举）', async () => {
-    const svc = build(undefined);
-    try {
-      await svc.login('DEMO', 'ghost', '123456');
-      fail('should throw');
-    } catch (err) {
-      expect((err as BusinessException).getResponse()).toMatchObject({ code: 40102 });
-    }
+  it('用户不存在与密码错误返回完全相同的 code 和 message（防枚举）', async () => {
+    const missing = build(undefined);
+    const wrongPwd = build({
+      id: 1,
+      companyId: 1,
+      username: 'admin',
+      password: hash,
+      status: 1,
+      isSuperAdmin: false,
+    });
+
+    // 注意密码要真的错：这个 repo mock 不区分 username，
+    // 传 '123456' 反而会登录成功
+    const grab = async (svc: AuthService, password: string): Promise<unknown> => {
+      try {
+        await svc.login('DEMO', 'ghost', password);
+        fail('should throw');
+      } catch (err) {
+        return (err as BusinessException).getResponse();
+      }
+    };
+
+    const a = await grab(missing, '123456');
+    const b = await grab(wrongPwd, 'wrong-password');
+    // 差一个字符都算泄漏：攻击者能据此区分「用户不存在」和「密码错」
+    expect(a).toEqual(b);
+    expect(a).toMatchObject({ code: 40101 });
   });
 });

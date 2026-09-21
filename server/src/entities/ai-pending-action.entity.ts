@@ -30,15 +30,22 @@ export class AiPendingActionEntity extends TenantBaseEntity {
     type: 'varchar',
     length: 16,
     default: 'pending',
-    comment: 'pending/confirmed/cancelled/failed',
+    comment: 'pending/executing/confirmed/cancelled/failed',
   })
   status: string;
 
   @Column({ type: 'datetime', comment: '过期时间' })
   expiresAt: Date;
 
-  @Column({ type: 'datetime', nullable: true, comment: '确认时间' })
+  @Column({ type: 'datetime', nullable: true, comment: '确认时间（落终态的时间）' })
   confirmedAt: Date;
+
+  /**
+   * 抢占时间。确认时先把状态改成 executing 并记下此刻，
+   * 超过租约仍未落终态即认定执行进程已死，由 reclaimStale() 回收。
+   */
+  @Column({ type: 'datetime', nullable: true, comment: 'executing 抢占时间（租约起点）' })
+  claimedAt: Date;
 
   @Column({ type: 'text', nullable: true, comment: '执行结果 JSON' })
   result: string;

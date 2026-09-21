@@ -34,9 +34,9 @@ describe('ERP API e2e（真实 MySQL）', () => {
     expect(res.body.data.user.menus.length).toBeGreaterThan(5);
   });
 
-  it('错误密码被拒绝（业务码 40102）', async () => {
+  it('错误密码被拒绝（统一业务码 40101，不区分失败原因）', async () => {
     const res = await login('DEMO', 'admin', 'wrong');
-    expect(res.body.code).toBe(40102);
+    expect(res.body.code).toBe(40101);
   });
 
   it('租户隔离：T2 看不到 DEMO 的商品', async () => {
